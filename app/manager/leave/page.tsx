@@ -8,28 +8,38 @@ import { Badge } from '@/components/ui/Badge';
 import { fetchApi } from '@/lib/api';
 import { Toast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
-import { CheckCircle, XCircle } from '@/components/ui/Icon';
+import { Plus, CheckCircle, XCircle, Clock } from '@/components/ui/Icon';
 
 export default function ManagerLeavePage() {
   const [requests, setRequests] = useState<any[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Reject Modal State
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectRequestId, setRejectRequestId] = useState<number | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  // Apply Leave Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [leaveTypeId, setLeaveTypeId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadRequests();
+    loadData();
   }, []);
 
-  const loadRequests = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetchApi('/leave/requests');
-      setRequests(res.leave_requests || []);
+      const [reqRes, typesRes] = await Promise.all([
+        fetchApi('/leave/requests'),
+        fetchApi('/leave/types').catch(() => ({ leave_types: [] })),
+      ]);
+      setRequests(reqRes.leave_requests || []);
+      setLeaveTypes(typesRes.leave_types || []);
+      if (typesRes.leave_types?.length > 0) {
+        setLeaveTypeId(typesRes.leave_types[0].id.toString());
+      }
     } catch (err) {
       setToastMessage('Failed to load leave requests');
     } finally {
@@ -37,48 +47,47 @@ export default function ManagerLeavePage() {
     }
   };
 
-  const handleApprove = async (id: number) => {
-    try {
-      await fetchApi(`/leave/requests/${id}/approve`, { method: 'POST' });
-      setToastMessage('Leave request approved');
-      await loadRequests();
-    } catch (err: any) {
-      setToastMessage(err.message || 'Approval failed');
-    }
-  };
-
-  const openRejectModal = (id: number) => {
-    setRejectRequestId(id);
-    setRejectionReason('');
-    setRejectModalOpen(true);
-  };
-
-  const handleConfirmReject = async (e: React.FormEvent) => {
+  const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rejectRequestId) return;
-    setRejectSubmitting(true);
+    setSubmitting(true);
     try {
-      await fetchApi(`/leave/requests/${rejectRequestId}/reject`, {
+      await fetchApi('/leave/requests', {
         method: 'POST',
-        body: JSON.stringify({ rejection_reason: rejectionReason }),
+        body: JSON.stringify({
+          leave_type_id: leaveTypeId,
+          start_date: startDate,
+          end_date: endDate,
+          reason,
+        }),
       });
-      setToastMessage('Leave request rejected');
-      setRejectModalOpen(false);
-      setRejectRequestId(null);
-      setRejectionReason('');
-      await loadRequests();
+
+      setToastMessage('Leave request submitted successfully to Administrator for review.');
+      setIsModalOpen(false);
+      setReason('');
+      setStartDate('');
+      setEndDate('');
+      await loadData();
     } catch (err: any) {
-      setToastMessage(err.message || 'Rejection failed');
+      setToastMessage(err.message || 'Failed to submit leave request');
     } finally {
-      setRejectSubmitting(false);
+      setSubmitting(false);
     }
   };
 
   return (
     <PortalLayout namespace="manager">
       <PageHeader
-        title="Team Leave Approvals"
-        description="Review leave applications submitted by your direct report team members"
+        title="Team Leave Requests & Apply Leave"
+        description="Monitor team leave applications and submit personal leave requests directly to the Administrator for approval"
+        action={
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Apply for Leave</span>
+          </button>
+        }
       />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
@@ -88,48 +97,51 @@ export default function ManagerLeavePage() {
           </div>
         ) : requests.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 font-medium">
-            No team leave requests pending approval.
+            No leave requests logged for your team yet.
           </div>
         ) : (
           <TablePrimitive
-            headers={['Team Member', 'Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Actions']}
+            headers={['Team Member', 'Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Decision Note']}
             rows={requests.map((r) => [
-              <span key="user" className="font-extrabold text-slate-900 text-xs">{r.user?.name || `Employee #${r.user_id}`}</span>,
-              <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
-              <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
-              <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
-              <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">{r.reason}</span>,
-              <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
-                {r.status}
+              <span key="user" className="font-extrabold text-slate-900 text-xs">
+                {r.user?.name || `Employee #${r.user_id}`}
+              </span>,
+              <span key="type" className="font-semibold text-slate-800 text-xs">
+                {r.leave_type?.name || 'Leave'}
+              </span>,
+              <span key="dates" className="font-mono text-xs text-slate-600">
+                {r.start_date} to {r.end_date}
+              </span>,
+              <span key="days" className="font-bold text-slate-900 text-xs">
+                {r.days_count}d
+              </span>,
+              <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">
+                {r.reason}
+              </span>,
+              <Badge
+                key="status"
+                variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}
+              >
+                {r.status === 'pending' ? 'Pending Admin Approval' : r.status === 'approved' ? 'Approved by Admin' : 'Rejected by Admin'}
               </Badge>,
-              <div key="actions" className="flex items-center gap-1">
-                {r.status === 'pending' ? (
-                  <>
-                    <button
-                      onClick={() => handleApprove(r.id)}
-                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold rounded shadow-2xs transition-all cursor-pointer"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => openRejectModal(r.id)}
-                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-[11px] font-bold rounded shadow-2xs transition-all cursor-pointer"
-                    >
-                      Reject
-                    </button>
-                  </>
-                ) : r.status === 'approved' ? (
+              <div key="note" className="text-xs">
+                {r.status === 'approved' ? (
                   <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    Approved {r.approver?.name ? `by ${r.approver.name}` : ''}
+                    Approved {r.approver?.name ? `(${r.approver.name})` : ''}
                   </span>
-                ) : (
+                ) : r.status === 'rejected' ? (
                   <span
                     className="text-[11px] font-semibold text-rose-700 flex items-center gap-1 cursor-help"
                     title={r.rejection_reason || 'Declined'}
                   >
                     <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                    Rejected {r.approver?.name ? `by ${r.approver.name}` : ''}
+                    {r.rejection_reason || 'Declined by Admin'}
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-amber-700 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    Awaiting Admin Decision
                   </span>
                 )}
               </div>,
@@ -138,41 +150,78 @@ export default function ManagerLeavePage() {
         )}
       </div>
 
-      {/* REJECT LEAVE MODAL */}
-      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject Leave Application">
-        <form onSubmit={handleConfirmReject} className="space-y-4">
-          <p className="text-xs text-slate-600 font-medium leading-relaxed">
-            Please specify the reason for rejecting this leave application. This justification will be sent to the employee.
+      {/* APPLY LEAVE MODAL */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Submit Manager Leave Request">
+        <form onSubmit={handleApplyLeave} className="space-y-4">
+          <p className="text-xs text-slate-600 font-medium">
+            Your leave request will be routed directly to the System Administrator for formal approval.
           </p>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Rejection Reason <span className="text-rose-500">*</span>
-            </label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Select Leave Category</label>
+            <select
+              value={leaveTypeId}
+              onChange={(e) => setLeaveTypeId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+            >
+              {leaveTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} (Annual Quota: {t.annual_quota || t.max_days_per_year || 12} days)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">End Date</label>
+              <input
+                type="date"
+                required
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Reason for Leave</label>
             <textarea
               required
               rows={3}
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-hidden focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-              placeholder="e.g. Insufficient team coverage during project sprint..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="State your reason for leave..."
             />
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setRejectModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition-all cursor-pointer"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={rejectSubmitting || !rejectionReason.trim()}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs disabled:opacity-50 transition-all cursor-pointer"
+              disabled={submitting || !startDate || !endDate || !reason.trim()}
+              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg disabled:opacity-50"
             >
-              {rejectSubmitting ? 'Rejecting...' : 'Confirm Rejection'}
+              {submitting ? 'Submitting...' : 'Submit to Admin'}
             </button>
           </div>
         </form>

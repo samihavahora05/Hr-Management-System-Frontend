@@ -13,8 +13,8 @@ import { DollarSign, Plus, CheckCircle, XCircle, Clock, FileText, Check, X } fro
 
 export default function ExpensesPage() {
   const { user } = useAuth();
-  const userRole = (user?.role || '').toLowerCase();
-  const canApprove = ['admin', 'hr', 'manager', 'company_manager', 'team_leader'].includes(userRole);
+  const userRole = (typeof user?.role === 'object' ? (user.role as any)?.name : user?.role || '').toString().toLowerCase();
+  const canApprove = userRole === 'admin';
 
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
