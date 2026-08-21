@@ -93,13 +93,11 @@ export default function HRLeavePage() {
 
   const handleExportExcel = () => {
     if (requests.length === 0) {
-      setToastMessage('No leave application data available to export.');
+      setToastMessage('No personal leave application data available to export.');
       return;
     }
-    const headers = ['Employee Name', 'Code', 'Leave Type', 'Start Date', 'End Date', 'Days Count', 'Reason', 'Status', 'Decision'];
+    const headers = ['Leave Type', 'Start Date', 'End Date', 'Days Count', 'Reason', 'Status', 'Decision'];
     const rows = requests.map((r) => [
-      r.user?.name || `Employee #${r.user_id}`,
-      r.user?.employee_code || '',
       r.leave_type?.name || 'Leave',
       r.start_date,
       r.end_date,
@@ -108,15 +106,15 @@ export default function HRLeavePage() {
       r.status,
       r.approver?.name ? `Processed by ${r.approver.name}` : 'Pending Admin Decision',
     ]);
-    exportToCSV('Leave_Applications_Report', headers, rows);
+    exportToCSV('My_HR_Leave_Applications_Report', headers, rows);
     setToastMessage('Leave records exported to Excel CSV format successfully!');
   };
 
   return (
     <PortalLayout namespace="hr">
       <PageHeader
-        title="Organization Leave Register & Applications"
-        description="View organization-wide employee leave requests and submit personal HR leave requests to the Administrator"
+        title="My Leave & Applications"
+        description="Submit personal leave requests directly to the Administrator and monitor your approval history"
         action={
           <div className="flex items-center gap-2">
             <button
@@ -156,22 +154,16 @@ export default function HRLeavePage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-xs text-slate-400 font-medium">
-            Loading organization leave applications...
+            Loading your leave applications...
           </div>
         ) : requests.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 font-medium">
-            No leave requests found for the selected criteria.
+            You have not submitted any leave requests yet. Click &quot;Apply for Leave&quot; above to request time off.
           </div>
         ) : (
           <TablePrimitive
-            headers={['Employee', 'Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Admin Decision']}
+            headers={['Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Admin Decision']}
             rows={requests.map((r) => [
-              <div key="emp">
-                <p className="font-extrabold text-slate-900 text-xs">
-                  {r.user?.name || `Employee #${r.user_id}`}
-                </p>
-                <p className="text-[10px] text-slate-400 font-mono">{r.user?.employee_code || ''}</p>
-              </div>,
               <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
               <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
               <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,

@@ -87,8 +87,8 @@ export default function ManagerLeavePage() {
   return (
     <PortalLayout namespace="manager">
       <PageHeader
-        title="Team Leave Requests & Apply Leave"
-        description="Monitor team leave applications and submit personal leave requests directly to the Administrator for approval"
+        title="My Leave & Applications"
+        description="Submit personal leave requests directly to the Administrator and track your approval status"
         action={
           <button
             onClick={() => setIsModalOpen(true)}
@@ -103,19 +103,16 @@ export default function ManagerLeavePage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-xs text-slate-400 font-medium">
-            Loading team leave requests...
+            Loading your leave applications...
           </div>
         ) : requests.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 font-medium">
-            No leave requests logged for your team yet.
+            You have not submitted any leave requests yet. Click &quot;Apply for Leave&quot; above to request time off.
           </div>
         ) : (
           <TablePrimitive
-            headers={['Team Member', 'Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Decision Note']}
+            headers={['Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Admin Decision']}
             rows={requests.map((r) => [
-              <span key="user" className="font-extrabold text-slate-900 text-xs">
-                {r.user?.name || `Employee #${r.user_id}`}
-              </span>,
               <span key="type" className="font-semibold text-slate-800 text-xs">
                 {r.leave_type?.name || 'Leave'}
               </span>,
