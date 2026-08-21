@@ -1,18 +1,14 @@
 'use client';
 
-import React from 'react';
-import { PortalLayout } from '@/components/layout/PortalLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { EmployeeTaskPerformance } from '@/components/performance/EmployeeTaskPerformance';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ManagerPerformancePage() {
-  return (
-    <PortalLayout namespace="manager">
-      <PageHeader
-        title="Team Task Performance & Leaderboard"
-        description="Monitor team members' task completion rates, evaluate quarterly output, and track team productivity"
-      />
-      <EmployeeTaskPerformance portalScope="manager" />
-    </PortalLayout>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/manager/dashboard');
+  }, [router]);
+
+  return null;
 }

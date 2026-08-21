@@ -82,7 +82,7 @@ export function ManagerDashboard() {
         </Link>
 
         <Link
-          href="/manager/performance"
+          href="/manager/tasks"
           className="group bg-white border border-slate-200 hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
@@ -148,11 +148,11 @@ export function ManagerDashboard() {
             </Link>
 
             <Link
-              href="/manager/performance"
+              href="/manager/tasks"
               className="p-3.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl flex items-center gap-3 transition-colors text-slate-800"
             >
-              <TrendingUp className="w-4 h-4 text-[#0f365e]" />
-              <span>Team Leader & Employee Performance</span>
+              <ListTodo className="w-4 h-4 text-[#0f365e]" />
+              <span>Review Team Task Board</span>
             </Link>
 
             <Link

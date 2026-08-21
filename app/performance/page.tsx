@@ -34,11 +34,17 @@ export default function PerformancePage() {
         router.replace('/login');
       } else {
         const role = (user.role || '').toLowerCase();
-        if (role === 'admin') router.replace('/admin/performance');
-        else if (role === 'hr') router.replace('/hr/performance');
-        else if (role === 'manager' || role === 'company_manager') router.replace('/manager/performance');
-        else if (role === 'team_leader' || role === 'tl') router.replace('/team-leader/performance');
-        else router.replace('/employee/performance');
+        if (role === 'admin') {
+          router.replace('/admin/performance');
+        } else if (role === 'hr') {
+          router.replace('/hr/dashboard');
+        } else if (role === 'manager' || role === 'company_manager') {
+          router.replace('/manager/dashboard');
+        } else if (role === 'team_leader' || role === 'tl') {
+          router.replace('/team-leader/dashboard');
+        } else {
+          router.replace('/employee/dashboard');
+        }
       }
     }
   }, [user, authLoading, router]);
