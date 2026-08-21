@@ -622,8 +622,8 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
                   const assignedEmployeeName =
                     task.assignedTo?.name ||
-                    (typeof task.assigned_to === 'object' ? (task.assigned_to?.name || `Employee #${task.assigned_to?.id || ''}`) : (task.assigned_to ? `Employee #${task.assigned_to}` : 'Unassigned'));
-                  const assignerName = task.assigner?.name || (typeof task.assigner_id === 'object' ? (task.assigner_id?.name || `User #${task.assigner_id?.id || ''}`) : (task.assigner_id ? `User #${task.assigner_id}` : 'System Admin'));
+                    (typeof task.assigned_to === 'object' && task.assigned_to !== null ? ((task.assigned_to as any)?.name || `Employee #${(task.assigned_to as any)?.id || ''}`) : (task.assigned_to ? `Employee #${task.assigned_to}` : 'Unassigned'));
+                  const assignerName = task.assigner?.name || (typeof task.assigner_id === 'object' && task.assigner_id !== null ? ((task.assigner_id as any)?.name || `User #${(task.assigner_id as any)?.id || ''}`) : (task.assigner_id ? `User #${task.assigner_id}` : 'System Admin'));
 
                   return (
                     <tr
@@ -761,7 +761,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                       <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         {isTaskAssignee(task) ? (
                           <select
-                            value={task.status === 'pending' ? 'todo' : task.status}
+                            value={(task.status as any) === 'pending' ? 'todo' : task.status}
                             onChange={(e) => handleStatusChange(task.id, e.target.value)}
                             className={`px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
                               task.status
@@ -820,7 +820,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
             { id: 'completed', title: 'Completed', color: 'border-emerald-400 bg-emerald-50/30' },
             { id: 'cancelled', title: 'Cancelled', color: 'border-slate-300 bg-slate-50/50' },
           ].map((column) => {
-            const columnTasks = filteredTasks.filter((t) => t.status === column.id || (column.id === 'todo' && t.status === 'pending') || (column.id === 'in_progress' && t.status === 'under_review'));
+            const columnTasks = filteredTasks.filter((t) => t.status === column.id || (column.id === 'todo' && (t.status as any) === 'pending') || (column.id === 'in_progress' && (t.status as any) === 'under_review'));
 
             return (
               <div
@@ -1117,7 +1117,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                 <span className="text-xs font-bold text-slate-600">Status:</span>
                 {isTaskAssignee(selectedTask) ? (
                   <select
-                    value={selectedTask.status === 'pending' ? 'todo' : selectedTask.status}
+                    value={(selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status}
                     onChange={(e) => handleStatusChange(selectedTask.id, e.target.value)}
                     className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
                       selectedTask.status
@@ -1148,14 +1148,14 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                 </span>
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-[#0f365e] text-white font-bold text-xs flex items-center justify-center">
-                    {((selectedTask.assignedTo?.name || (typeof selectedTask.assigned_to === 'object' ? selectedTask.assigned_to?.name : null)) || 'E')[0]}
+                    {((selectedTask.assignedTo?.name || (typeof selectedTask.assigned_to === 'object' && selectedTask.assigned_to !== null ? (selectedTask.assigned_to as any)?.name : null)) || 'E')[0]}
                   </div>
                   <div>
                     <p className="font-bold text-slate-900">
-                      {selectedTask.assignedTo?.name || (typeof selectedTask.assigned_to === 'object' ? (selectedTask.assigned_to?.name || `Employee #${selectedTask.assigned_to?.id || ''}`) : (selectedTask.assigned_to ? `Employee #${selectedTask.assigned_to}` : 'Unassigned'))}
+                      {selectedTask.assignedTo?.name || (typeof selectedTask.assigned_to === 'object' && selectedTask.assigned_to !== null ? ((selectedTask.assigned_to as any)?.name || `Employee #${(selectedTask.assigned_to as any)?.id || ''}`) : (selectedTask.assigned_to ? `Employee #${selectedTask.assigned_to}` : 'Unassigned'))}
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      {selectedTask.assignedTo?.email || (typeof selectedTask.assigned_to === 'object' ? selectedTask.assigned_to?.email : null) || 'Corporate Staff'}
+                      {selectedTask.assignedTo?.email || (typeof selectedTask.assigned_to === 'object' && selectedTask.assigned_to !== null ? (selectedTask.assigned_to as any)?.email : null) || 'Corporate Staff'}
                     </p>
                   </div>
                 </div>
