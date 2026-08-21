@@ -10,15 +10,24 @@ import { fetchApi } from '@/lib/api';
 import { Toast } from '@/components/ui/Toast';
 import { Plus } from '@/components/ui/Icon';
 
+const DEFAULT_LEAVE_TYPES = [
+  { id: 1, name: 'Casual Leave (CL)', annual_quota: 12 },
+  { id: 2, name: 'Sick Leave (SL)', annual_quota: 10 },
+  { id: 3, name: 'Earned / Privilege Leave (PL)', annual_quota: 15 },
+  { id: 4, name: 'Maternity / Paternity Leave', annual_quota: 30 },
+  { id: 5, name: 'Compensatory Off (Comp-Off)', annual_quota: 5 },
+  { id: 6, name: 'Unpaid Leave (LOP)', annual_quota: 0 },
+];
+
 export default function EmployeeLeavePage() {
   const [balances, setBalances] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<any[]>(DEFAULT_LEAVE_TYPES);
   const [loading, setLoading] = useState(true);
 
   // Leave application modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [leaveTypeId, setLeaveTypeId] = useState('');
+  const [leaveTypeId, setLeaveTypeId] = useState('1');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
@@ -35,14 +44,15 @@ export default function EmployeeLeavePage() {
       const [balRes, reqRes, typeRes] = await Promise.all([
         fetchApi('/leave/balances').catch(() => ({ balances: [] })),
         fetchApi('/leave/requests').catch(() => ({ leave_requests: [] })),
-        fetchApi('/leave/types').catch(() => ({ leave_types: [] })),
+        fetchApi('/leave/types').catch(() => ({ leave_types: DEFAULT_LEAVE_TYPES })),
       ]);
       setBalances(balRes?.balances || []);
       setRequests(reqRes?.leave_requests || []);
-      setLeaveTypes(typeRes?.leave_types || []);
+      const fetchedTypes = typeRes?.leave_types?.length > 0 ? typeRes.leave_types : DEFAULT_LEAVE_TYPES;
+      setLeaveTypes(fetchedTypes);
 
-      if (typeRes?.leave_types?.length > 0) {
-        setLeaveTypeId(typeRes.leave_types[0].id.toString());
+      if (fetchedTypes?.length > 0) {
+        setLeaveTypeId(fetchedTypes[0].id.toString());
       }
     } catch (err) {
       setToastMessage('Failed to load leave data');

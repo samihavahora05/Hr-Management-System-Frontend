@@ -10,15 +10,24 @@ import { Toast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
 import { Plus, CheckCircle, XCircle, Clock } from '@/components/ui/Icon';
 
+const DEFAULT_LEAVE_TYPES = [
+  { id: 1, name: 'Casual Leave (CL)', annual_quota: 12 },
+  { id: 2, name: 'Sick Leave (SL)', annual_quota: 10 },
+  { id: 3, name: 'Earned / Privilege Leave (PL)', annual_quota: 15 },
+  { id: 4, name: 'Maternity / Paternity Leave', annual_quota: 30 },
+  { id: 5, name: 'Compensatory Off (Comp-Off)', annual_quota: 5 },
+  { id: 6, name: 'Unpaid Leave (LOP)', annual_quota: 0 },
+];
+
 export default function ManagerLeavePage() {
   const [requests, setRequests] = useState<any[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<any[]>(DEFAULT_LEAVE_TYPES);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Apply Leave Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [leaveTypeId, setLeaveTypeId] = useState('');
+  const [leaveTypeId, setLeaveTypeId] = useState('1');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
@@ -33,12 +42,13 @@ export default function ManagerLeavePage() {
     try {
       const [reqRes, typesRes] = await Promise.all([
         fetchApi('/leave/requests'),
-        fetchApi('/leave/types').catch(() => ({ leave_types: [] })),
+        fetchApi('/leave/types').catch(() => ({ leave_types: DEFAULT_LEAVE_TYPES })),
       ]);
       setRequests(reqRes.leave_requests || []);
-      setLeaveTypes(typesRes.leave_types || []);
-      if (typesRes.leave_types?.length > 0) {
-        setLeaveTypeId(typesRes.leave_types[0].id.toString());
+      const fetchedTypes = typesRes.leave_types?.length > 0 ? typesRes.leave_types : DEFAULT_LEAVE_TYPES;
+      setLeaveTypes(fetchedTypes);
+      if (fetchedTypes?.length > 0) {
+        setLeaveTypeId(fetchedTypes[0].id.toString());
       }
     } catch (err) {
       setToastMessage('Failed to load leave requests');
