@@ -145,11 +145,22 @@ export function EmployeeDashboard({
 
           {isCheckedIn ? (
             <>
-              <div className="text-2xl font-black text-slate-900 mt-2 font-mono">
-                {formatTimeDisplay(myTodayAttendance.check_in)}
+              <div className="text-xl font-black text-slate-900 mt-2 font-mono flex items-center justify-between">
+                <span>In: {formatTimeDisplay(myTodayAttendance.check_in)}</span>
+                {isCheckedOut && (
+                  <span className="text-xs text-slate-600 font-semibold">Out: {formatTimeDisplay(myTodayAttendance.check_out)}</span>
+                )}
               </div>
-              <p className={`text-[10px] font-bold mt-2 flex items-center gap-1 ${myTodayAttendance.status === 'late' ? 'text-amber-600' : 'text-emerald-700'}`}>
-                {myTodayAttendance.status === 'late' ? '● Checked in late' : '✓ On time check-in'}
+              <p className={`text-[10px] font-bold mt-2 flex items-center gap-1 ${
+                isCheckedOut 
+                  ? 'text-indigo-700' 
+                  : myTodayAttendance.status === 'late' 
+                    ? 'text-amber-600' 
+                    : 'text-emerald-700'
+              }`}>
+                {isCheckedOut 
+                  ? (myTodayAttendance.notes?.includes('Auto check-out') ? '⚡ Auto Checked Out' : '✓ Checked Out') 
+                  : (myTodayAttendance.status === 'late' ? '● Checked in late' : '✓ Active (Auto Clock-out at Shift End)')}
               </p>
             </>
           ) : (

@@ -58,6 +58,7 @@ export default function EmployeeAttendancePage() {
   const { user } = useAuth();
   const [attendances, setAttendances] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -78,23 +79,32 @@ export default function EmployeeAttendancePage() {
 
   useEffect(() => {
     loadData();
+    // Periodically re-evaluate auto check-outs every 30 seconds
+    const interval = setInterval(() => {
+      loadData(false);
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
-      const [histRes, sumRes] = await Promise.all([
+      const [histRes, sumRes, schedRes] = await Promise.all([
         fetchApi('/attendance/history'),
         fetchApi('/attendance/summary').catch(() => null),
+        fetchApi('/attendance/schedule').catch(() => null),
       ]);
       setAttendances(histRes.attendances || []);
       if (sumRes?.my_today) {
         setTodayAttendance(sumRes.my_today);
       }
+      if (schedRes?.schedule) {
+        setSchedule(schedRes.schedule);
+      }
     } catch (err) {
-      setToastMessage('Failed to load attendance history');
+      if (showLoading) setToastMessage('Failed to load attendance history');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -217,6 +227,36 @@ export default function EmployeeAttendancePage() {
           </div>
         }
       />
+
+      {/* SHIFT TIMING & AUTO CLOCK-OUT STATUS BANNER */}
+      <div className="bg-gradient-to-r from-[#0f365e]/5 via-indigo-50/40 to-emerald-50/30 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#0f365e] text-white flex items-center justify-center font-bold">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-slate-900">
+                {schedule?.shift_name || 'General Day Shift'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                {formatTime(schedule?.start_time || '09:00:00')} - {formatTime(schedule?.end_time || '18:00:00')}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Working Days: {schedule?.work_days ? schedule.work_days.join(', ') : 'Mon - Fri'} • Grace Period: {schedule?.grace_period_minutes ?? 15} mins
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/80 border border-slate-200 px-3 py-2 rounded-lg text-slate-700 font-medium">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[11px]">
+            <strong>Auto Clock-Out:</strong> System automatically clocks out at{' '}
+            <strong className="text-emerald-700">{formatTime(schedule?.end_time || '18:00:00')}</strong>
+          </span>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         {loading ? (
