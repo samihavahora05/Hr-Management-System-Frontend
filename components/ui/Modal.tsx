@@ -28,13 +28,13 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'lg' }: Mod
   const maxWClass = maxWidthMap[maxWidth] || 'max-w-lg';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto print:static print:p-0 print:bg-white print:overflow-visible print:z-auto">
       <div
-        className={`bg-white border border-slate-200 rounded-2xl shadow-2xl ${maxWClass} w-full my-8 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]`}
+        className={`bg-white border border-slate-200 rounded-2xl shadow-2xl ${maxWClass} w-full my-8 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:border-none print:my-0 print:w-full print:rounded-none print:p-0`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* MODAL HEADER */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70 shrink-0 print:hidden">
           <h2 className="text-base font-black text-slate-900 tracking-tight">{title}</h2>
           <button
             onClick={onClose}
@@ -45,7 +45,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'lg' }: Mod
         </div>
 
         {/* MODAL CONTENT */}
-        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="p-6 overflow-y-auto flex-1 print:p-0 print:overflow-visible">{children}</div>
       </div>
     </div>
   );
