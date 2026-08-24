@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { TablePrimitive } from '@/components/ui/TablePrimitive';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Toast } from '@/components/ui/Toast';
 import { SalarySlipModal } from '@/components/payroll/SalarySlipModal';
 import { fetchApi } from '@/lib/api';
@@ -76,6 +77,10 @@ export default function AdminPayrollPage() {
   // Salary Slip Modal State
   const [selectedSlipData, setSelectedSlipData] = useState<any>(null);
   const [isSlipModalOpen, setIsSlipModalOpen] = useState(false);
+
+  // Confirm Mark Paid State
+  const [confirmPaidItem, setConfirmPaidItem] = useState<any | null>(null);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -229,14 +234,22 @@ export default function AdminPayrollPage() {
     }
   };
 
-  const handleMarkPaid = async (id: number) => {
-    if (!confirm('Mark this payroll as PAID? This will lock the record and notify the employee.')) return;
+  const handleMarkPaid = (p: any) => {
+    setConfirmPaidItem(p);
+  };
+
+  const executeMarkPaid = async () => {
+    if (!confirmPaidItem) return;
+    setMarkingPaid(true);
     try {
-      await fetchApi(`/payroll/${id}/mark-paid`, { method: 'POST' });
+      await fetchApi(`/payroll/${confirmPaidItem.id}/mark-paid`, { method: 'POST' });
       setToastMessage('Payroll marked as Paid! Notification sent to employee.');
+      setConfirmPaidItem(null);
       await loadPayrolls();
     } catch (err: any) {
       setToastMessage(err.message || 'Failed to mark as paid');
+    } finally {
+      setMarkingPaid(false);
     }
   };
 
@@ -504,8 +517,8 @@ export default function AdminPayrollPage() {
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleMarkPaid(p.id)}
-                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                      onClick={() => handleMarkPaid(p)}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1 active:scale-95"
                       title="Mark as Paid and notify employee"
                     >
                       <CheckCircle className="w-3.5 h-3.5" />
@@ -903,6 +916,42 @@ export default function AdminPayrollPage() {
         isOpen={isSlipModalOpen}
         onClose={() => setIsSlipModalOpen(false)}
         slipData={selectedSlipData}
+      />
+
+      {/* CUSTOM CONFIRMATION MODAL FOR MARK AS PAID */}
+      <ConfirmModal
+        isOpen={!!confirmPaidItem}
+        onClose={() => setConfirmPaidItem(null)}
+        onConfirm={executeMarkPaid}
+        loading={markingPaid}
+        title="Confirm Salary Disbursement"
+        description="Are you sure you want to mark this salary slip as PAID? This action will lock line items from further edits and automatically notify the employee with their official payslip."
+        variant="success"
+        confirmText="Yes, Mark as Paid & Notify"
+        details={
+          confirmPaidItem && (
+            <div className="space-y-2 text-slate-700 font-medium">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-bold">Employee:</span>
+                <span className="font-extrabold text-slate-900">
+                  {confirmPaidItem.employee?.name} ({confirmPaidItem.employee?.employee_code || `EMP-${confirmPaidItem.employee_id}`})
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-bold">Pay Period:</span>
+                <span className="font-extrabold text-slate-900">
+                  {confirmPaidItem.pay_period_month} {confirmPaidItem.pay_period_year}
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-t border-slate-200 pt-2 font-bold text-emerald-800">
+                <span className="text-slate-700">Net Disbursed Pay:</span>
+                <span className="font-mono text-sm font-black">
+                  ₹ {Number(confirmPaidItem.net_salary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          )
+        }
       />
 
       <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />

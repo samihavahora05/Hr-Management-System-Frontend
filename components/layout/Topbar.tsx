@@ -36,6 +36,9 @@ export function Topbar() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +57,55 @@ export function Topbar() {
       const res = await fetchApi('/notifications');
       if (typeof res.unread_count === 'number') {
         setUnreadCount(res.unread_count);
+      }
+      if (res.notifications) {
+        setNotificationsList(res.notifications);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const handleToggleNotifDropdown = async () => {
+    const nextState = !isNotifDropdownOpen;
+    setIsNotifDropdownOpen(nextState);
+    if (nextState) {
+      setLoadingNotifs(true);
+      try {
+        const res = await fetchApi('/notifications');
+        setNotificationsList(res.notifications || []);
+        if (typeof res.unread_count === 'number') setUnreadCount(res.unread_count);
+      } catch (e) {
+        // ignore
+      } finally {
+        setLoadingNotifs(false);
+      }
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetchApi('/notifications/read-all', { method: 'POST' });
+      setUnreadCount(0);
+      setNotificationsList((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setToastMessage('All notifications marked as read');
+    } catch (e: any) {
+      setToastMessage(e.message || 'Failed to mark all as read');
+    }
+  };
+
+  const handleNotificationClick = async (notif: any) => {
+    try {
+      if (!notif.is_read) {
+        await fetchApi(`/notifications/${notif.id}/read`, { method: 'POST' });
+        setUnreadCount((c) => Math.max(0, c - 1));
+        setNotificationsList((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+        );
+      }
+      setIsNotifDropdownOpen(false);
+      if (notif.action_url) {
+        router.push(notif.action_url);
       }
     } catch (e) {
       // ignore
@@ -238,19 +290,105 @@ export function Topbar() {
         )}
 
         {/* User Account Controls */}
-        <div className="flex items-center gap-3 border-l border-[#c3c6cf] pl-4">
-          <Link
-            href="/notifications"
-            className="text-slate-500 hover:text-[#0f365e] transition-colors relative p-1"
-            title="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 bg-rose-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs animate-pulse">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
+        <div className="flex items-center gap-3 border-l border-[#c3c6cf] pl-4 relative">
+          {/* Notifications Dropdown Toggle */}
+          <div className="relative">
+            <button
+              onClick={handleToggleNotifDropdown}
+              className="text-slate-500 hover:text-[#0f365e] transition-colors relative p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute 0 top-0.5 right-0.5 min-w-[15px] h-[15px] px-0.5 bg-rose-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* FLOATING NOTIFICATION POPUP */}
+            {isNotifDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsNotifDropdownOpen(false)}
+                />
+                <div className="absolute right-0 top-11 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in zoom-in-95 duration-150">
+                  {/* POPUP HEADER */}
+                  <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-xs text-slate-900">Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-black rounded-full">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* NOTIFICATION LIST */}
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {loadingNotifs ? (
+                      <div className="p-6 text-center text-xs text-slate-400 font-medium animate-pulse">
+                        Loading notifications...
+                      </div>
+                    ) : notificationsList.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-slate-700">No notifications yet</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">We'll alert you when there's an update</p>
+                      </div>
+                    ) : (
+                      notificationsList.slice(0, 5).map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => handleNotificationClick(n)}
+                          className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 ${
+                            !n.is_read ? 'bg-indigo-50/40' : ''
+                          }`}
+                        >
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                            !n.is_read ? 'bg-indigo-600 animate-pulse' : 'bg-transparent'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-extrabold text-xs text-slate-900 leading-tight">
+                              {n.title}
+                            </p>
+                            <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-snug">
+                              {n.message}
+                            </p>
+                            <span className="text-[9px] font-semibold text-slate-400 mt-1 block">
+                              {n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* POPUP FOOTER */}
+                  <div className="p-2.5 bg-slate-50/80 border-t border-slate-100 text-center">
+                    <Link
+                      href="/notifications"
+                      onClick={() => setIsNotifDropdownOpen(false)}
+                      className="text-xs font-bold text-[#0f365e] hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>View Notification Center</span>
+                      <span>→</span>
+                    </Link>
+                  </div>
+                </div>
+              </>
             )}
-          </Link>
+          </div>
 
           <Link
             href={activeNamespace === 'admin' ? '/admin/settings' : `/${activeNamespace}/dashboard`}
