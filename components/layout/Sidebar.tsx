@@ -132,6 +132,7 @@ export function Sidebar() {
     employee: [
       { label: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard },
       { label: 'AI Assistant', href: '/employee/assistant', icon: Sparkles },
+      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'My Payslips', href: '/employee/payroll', icon: CreditCard },
       { label: 'My Tasks', href: '/employee/tasks', icon: ListTodo },
       { label: 'Attendance', href: '/employee/attendance', icon: Clock },
@@ -140,7 +141,6 @@ export function Sidebar() {
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'My Assets', href: '/assets', icon: Building2 },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
-      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'My Vault', href: '/employee/documents', icon: FileText },
       { label: 'Profile', href: '/employee/profile', icon: User },
     ],
@@ -169,7 +169,7 @@ export function Sidebar() {
     };
   }, [pathname]);
 
-  const currentMenuItems = menuItemsMap[activeNamespace] || menuItemsMap.employee;
+  const currentMenuItems = (menuItemsMap[activeNamespace] || menuItemsMap.employee).filter(Boolean);
 
   const handleLogout = async () => {
     await logout();
