@@ -33,21 +33,81 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
   } = slipData;
 
   const handlePrint = () => {
-    document.body.classList.add('is-printing-salary-slip');
+    const printableElement = document.getElementById('salary-slip-printable');
+    if (!printableElement) return;
+
+    // Use a clean popup window so ONLY the slip HTML is printed (0 blank pages, 0 extra dashboard pages)
+    const printWindow = window.open('', '_blank', 'width=850,height=950');
     
-    const handleAfterPrint = () => {
-      document.body.classList.remove('is-printing-salary-slip');
-      window.removeEventListener('afterprint', handleAfterPrint);
-    };
-
-    window.addEventListener('afterprint', handleAfterPrint);
-
-    setTimeout(() => {
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <title>${company.name || 'BLUEBOXX DA PVT. LTD.'} - Salary Slip - ${employee.name || 'Staff'}</title>
+            <style>
+              @page {
+                size: A4 portrait;
+                margin: 5mm 8mm;
+              }
+              * {
+                box-sizing: border-box;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              html, body {
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                color: #081e3a;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-size: 11px;
+                line-height: 1.35;
+              }
+              .print-container {
+                width: 100%;
+                max-width: 194mm;
+                margin: 0 auto;
+                padding: 4px;
+              }
+              #salary-slip-printable {
+                border: 2px solid #081e3a;
+                border-radius: 8px;
+                padding: 18px;
+                background: #ffffff;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+                break-inside: avoid !important;
+              }
+            </style>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body class="bg-white">
+            <div class="print-container">
+              ${printableElement.outerHTML}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.focus();
+                  window.print();
+                  setTimeout(function() {
+                    window.close();
+                  }, 500);
+                }, 250);
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } else {
+      // Fallback: If popup is blocked by browser, use direct print
       window.print();
-      setTimeout(() => {
-        document.body.classList.remove('is-printing-salary-slip');
-      }, 1500);
-    }, 50);
+    }
   };
 
   // Pad table rows so earnings and deductions have equal rows
@@ -68,53 +128,6 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
       title={`Salary Slip #${id} — ${employee.name} (${pay_period_month} ${pay_period_year})`}
       maxWidth="3xl"
     >
-      {/* PRECISE A4 SINGLE-PAGE PRINT STYLES */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @page {
-            size: A4 portrait;
-            margin: 5mm 6mm;
-          }
-          @media print {
-            html, body {
-              width: 100% !important;
-              height: 100% !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              background: #ffffff !important;
-              overflow: hidden !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              color-adjust: exact !important;
-            }
-            body.is-printing-salary-slip * {
-              visibility: hidden !important;
-            }
-            body.is-printing-salary-slip #salary-slip-printable,
-            body.is-printing-salary-slip #salary-slip-printable * {
-              visibility: visible !important;
-            }
-            body.is-printing-salary-slip #salary-slip-printable {
-              position: fixed !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              max-width: 198mm !important;
-              margin: 0 auto !important;
-              padding: 4mm 6mm !important;
-              border: 2px solid #081e3a !important;
-              border-radius: 8px !important;
-              box-shadow: none !important;
-              background: #ffffff !important;
-              z-index: 999999 !important;
-              page-break-inside: avoid !important;
-              page-break-after: avoid !important;
-              break-inside: avoid !important;
-            }
-          }
-        `
-      }} />
-
       <div className="space-y-3">
         {/* ACTION BAR (SCREEN ONLY) */}
         <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200 print:hidden">
@@ -140,7 +153,7 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
               className="px-5 py-2 hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Print / Save as PDF (1 Page A4)</span>
+              <span>Print / Save as PDF</span>
             </button>
           </div>
         </div>
