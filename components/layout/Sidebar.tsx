@@ -94,6 +94,7 @@ export function Sidebar() {
     hr: [
       { label: 'Dashboard', href: '/hr/dashboard', icon: LayoutDashboard },
       { label: 'HR Assistant', href: '/hr/assistant', icon: Sparkles },
+      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Employees', href: '/hr/employees', icon: Users },
       { label: 'Recruitment & ATS', href: '/hr/recruitment', icon: UserCheck },
       { label: 'Tasks', href: '/hr/tasks', icon: ListTodo },
@@ -103,30 +104,29 @@ export function Sidebar() {
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Asset Register', href: '/assets', icon: Building2 },
       { label: 'HR Helpdesk', href: '/helpdesk', icon: FileText },
-      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Reports', href: '/hr/reports', icon: FileText },
       { label: 'Announcements', href: '/hr/announcements', icon: Megaphone },
     ],
     manager: [
       { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
       { label: 'Team Assistant', href: '/manager/assistant', icon: Sparkles },
+      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Team Leaders', href: '/manager/team', icon: Users },
       { label: 'Employees', href: '/manager/employees', icon: UserCheck },
       { label: 'Team Tasks', href: '/manager/tasks', icon: ListTodo },
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Expenses', href: '/expenses', icon: CreditCard },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
-      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Reports', href: '/manager/reports', icon: FileText },
     ],
     team_leader: [
       { label: 'Dashboard', href: '/team-leader/dashboard', icon: LayoutDashboard },
       { label: 'Team Assistant', href: '/team-leader/assistant', icon: Sparkles },
+      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'My Team', href: '/team-leader/team', icon: Users },
       { label: 'Tasks', href: '/team-leader/tasks', icon: ListTodo },
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
-      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Profile', href: '/team-leader/profile', icon: User },
     ],
     employee: [
@@ -169,7 +169,7 @@ export function Sidebar() {
     };
   }, [pathname]);
 
-  const currentMenuItems = (menuItemsMap[activeNamespace] || menuItemsMap.employee).filter(Boolean);
+  const currentMenuItems = menuItemsMap[activeNamespace] || menuItemsMap.employee;
 
   const handleLogout = async () => {
     await logout();
@@ -235,8 +235,8 @@ export function Sidebar() {
               href={item.href}
               title={isCollapsed ? (hasUnread ? `${item.label} (${unreadCount} unread)` : item.label) : undefined}
               className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 group relative ${isActive
-                  ? 'bg-slate-100 text-[#0f365e] font-bold border border-[#c3c6cf] shadow-2xs'
-                  : 'text-slate-600 hover:text-[#0f365e] hover:bg-slate-50'
+                ? 'bg-slate-100 text-[#0f365e] font-bold border border-[#c3c6cf] shadow-2xs'
+                : 'text-slate-600 hover:text-[#0f365e] hover:bg-slate-50'
                 }`}
             >
               <div className="flex items-center gap-3 min-w-0">
