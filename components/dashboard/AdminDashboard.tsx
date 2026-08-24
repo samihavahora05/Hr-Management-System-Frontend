@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   Building2,
   ChevronRight,
+  Sparkles,
+  Plus,
 } from '@/components/ui/Icon';
 
 export function AdminDashboard() {
@@ -25,218 +27,246 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApi('/dashboard/stats')
+    fetchApi('/admin/stats')
       .then((res) => setStats(res))
-      .catch((err) => console.error('Failed to load admin stats', err))
+      .catch((err) => {
+        console.error('Failed to load admin stats, falling back to /dashboard/stats', err);
+        return fetchApi('/dashboard/stats').then((res) => setStats(res));
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const counts = stats?.counts || {};
-  const tasks = stats?.tasks || {};
-  const recentTasks = stats?.recent_tasks || [];
+  const headcount = stats?.headcount || {
+    total: stats?.counts?.total_employees || 0,
+    active: stats?.counts?.total_employees || 0,
+    departments: 4,
+    managers: stats?.counts?.total_managers || 0,
+    team_leaders: stats?.counts?.total_team_leaders || 0,
+  };
+  const attendance = stats?.attendance || {
+    today_present: 0,
+    today_late: 0,
+    on_time_rate: 100,
+  };
+  const pending = stats?.pending_actions || {
+    leave_requests: 0,
+    expense_claims: 0,
+    total_pending: 0,
+  };
+  const recruitment = stats?.recruitment || {
+    active_openings: 0,
+    active_candidates: 0,
+  };
+  const recentActivity = stats?.recent_activity || [];
 
   return (
-    <div className="space-y-6 text-slate-900">
-      {/* 5 ROLE COUNTS SUMMARY ROW */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div className="space-y-6 text-slate-900 animate-in fade-in duration-200">
+      {/* COMMAND CENTER TOP BANNER */}
+      <div className="bg-gradient-to-r from-[#0f365e] to-[#1e548a] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold tracking-wider uppercase">
+              Command Center
+            </span>
+            <span className="text-xs text-indigo-100 font-medium">
+              {stats?.organization?.name || 'Organization Headquarters'}
+            </span>
+          </div>
+          <h2 className="text-xl font-black tracking-tight">Organization Overview & Operations</h2>
+          <p className="text-xs text-indigo-100 mt-1 max-w-xl">
+            Real-time workforce intelligence, pending approvals, attendance compliance, and AI-assisted governance.
+          </p>
+        </div>
+
+        <Link
+          href="/admin/assistant"
+          className="px-4 py-2.5 bg-white text-[#0f365e] hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer shrink-0 active:scale-95"
+        >
+          <Sparkles className="w-4 h-4 text-indigo-600" />
+          <span>Launch AI Assistant</span>
+        </Link>
+      </div>
+
+      {/* 4 PRIMARY METRIC TILES ROW */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/admin/users"
-          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
         >
-          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase">
-            <span className="group-hover:text-slate-900 transition-colors">Total Employees</span>
+          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
+            <span className="group-hover:text-slate-900 transition-colors">Total Workforce</span>
             <Users className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <div className="text-2xl font-black text-slate-900 font-mono">
-              {counts.total_employees || 0}
+          <div className="flex items-baseline justify-between mt-2">
+            <div className="text-3xl font-black text-slate-900 font-mono">
+              {headcount.total}
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" />
+            <span className="text-[11px] font-bold text-emerald-600">
+              {headcount.active} Active
+            </span>
           </div>
+          <p className="text-[10px] text-slate-400 mt-2 font-medium">
+            Across {headcount.departments} departments
+          </p>
         </Link>
 
         <Link
-          href="/admin/users"
-          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
+          href="/admin/attendance"
+          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
         >
-          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase">
-            <span className="group-hover:text-indigo-600 transition-colors">HR Managers</span>
-            <ShieldCheck className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
+            <span className="group-hover:text-emerald-700 transition-colors">Today Attendance</span>
+            <Clock className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <div className="text-2xl font-black text-indigo-700 font-mono">
-              {counts.total_hr || 0}
+          <div className="flex items-baseline justify-between mt-2">
+            <div className="text-3xl font-black text-emerald-700 font-mono">
+              {attendance.today_present}
             </div>
-            <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+            <span className="text-[11px] font-bold text-slate-600 font-mono">
+              {attendance.on_time_rate}% On-Time
+            </span>
           </div>
+          <p className="text-[10px] text-amber-600 mt-2 font-medium">
+            {attendance.today_late} late arrivals today
+          </p>
         </Link>
 
         <Link
-          href="/admin/users"
-          className="group bg-white border border-slate-200 hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
+          href="/admin/leave"
+          className="group bg-white border border-slate-200 hover:border-amber-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
         >
-          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase">
-            <span className="group-hover:text-sky-600 transition-colors">Company Managers</span>
-            <Building2 className="w-4 h-4 text-sky-500 group-hover:scale-110 transition-transform" />
+          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
+            <span className="group-hover:text-amber-700 transition-colors">Pending Approvals</span>
+            <AlertTriangle className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <div className="text-2xl font-black text-sky-700 font-mono">
-              {counts.total_managers || 0}
-            </div>
-            <ChevronRight className="w-4 h-4 text-sky-300 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all" />
-          </div>
-        </Link>
-
-        <Link
-          href="/admin/users"
-          className="group bg-white border border-slate-200 hover:border-amber-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
-        >
-          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase">
-            <span className="group-hover:text-amber-600 transition-colors">Team Leaders</span>
-            <UserCheck className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <div className="text-2xl font-black text-amber-700 font-mono">
-              {counts.total_team_leaders || 0}
+          <div className="flex items-baseline justify-between mt-2">
+            <div className="text-3xl font-black text-amber-600 font-mono">
+              {pending.total_pending}
             </div>
             <ChevronRight className="w-4 h-4 text-amber-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
           </div>
+          <p className="text-[10px] text-slate-400 mt-2 font-medium">
+            {pending.leave_requests} leaves, {pending.expense_claims} claims
+          </p>
+        </Link>
+
+        <Link
+          href="/hr/recruitment"
+          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
+            <span className="group-hover:text-indigo-700 transition-colors">Recruitment ATS</span>
+            <UserCheck className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="flex items-baseline justify-between mt-2">
+            <div className="text-3xl font-black text-indigo-700 font-mono">
+              {recruitment.active_openings}
+            </div>
+            <span className="text-[11px] font-bold text-indigo-600">
+              {recruitment.active_candidates} In Pipeline
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-2 font-medium">
+            Active Job Openings
+          </p>
         </Link>
       </div>
 
-      {/* TASK STATS SUMMARY ROW */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <Link
-          href="/admin/tasks"
-          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 group-hover:text-slate-700 transition-colors">
-              Total Tasks
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-600 transition-all" />
-          </div>
-          <span className="text-2xl font-black text-slate-900">{tasks.total || 0}</span>
-        </Link>
-
-        <Link
-          href="/admin/tasks"
-          className="group bg-white border border-slate-200 hover:border-amber-400 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-extrabold uppercase text-amber-600 group-hover:text-amber-700 transition-colors">
-              To Do
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-amber-300 group-hover:text-amber-600 transition-all" />
-          </div>
-          <span className="text-2xl font-black text-amber-600">{tasks.todo || 0}</span>
-        </Link>
-
-        <Link
-          href="/admin/tasks"
-          className="group bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-extrabold uppercase text-indigo-600 group-hover:text-indigo-700 transition-colors">
-              In Progress
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-indigo-300 group-hover:text-indigo-600 transition-all" />
-          </div>
-          <span className="text-2xl font-black text-indigo-600">{tasks.in_progress || 0}</span>
-        </Link>
-
-        <Link
-          href="/admin/tasks"
-          className="group bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-extrabold uppercase text-emerald-600 group-hover:text-emerald-700 transition-colors">
-              Completed
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-emerald-300 group-hover:text-emerald-600 transition-all" />
-          </div>
-          <span className="text-2xl font-black text-emerald-600">{tasks.completed || 0}</span>
-        </Link>
-
-        <Link
-          href="/admin/tasks"
-          className="group bg-white border border-rose-200 bg-rose-50/20 hover:border-rose-400 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 shadow-2xs block cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-extrabold uppercase text-rose-600 group-hover:text-rose-700 transition-colors">
-              Overdue
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-rose-300 group-hover:text-rose-600 transition-all" />
-          </div>
-          <span className="text-2xl font-black text-rose-600">{tasks.overdue || 0}</span>
-        </Link>
-      </div>
-
-      {/* RECENT ORGANIZATION TASKS & SHORTCUTS */}
+      {/* QUICK ACTIONS & RECENT ACTIVITY GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Organization Task Activity Overview
-            </h3>
-            <Link href="/admin/tasks" className="text-xs font-bold text-[#0f365e] hover:underline">
-              View All Tasks &rarr;
+        {/* QUICK ACTIONS PANEL */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900 mb-1">Administrative Shortcuts</h3>
+            <p className="text-xs text-slate-500 mb-4">Direct shortcuts to governance facilities</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <Link
+                href="/admin/assistant"
+                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>AI Assistant</span>
+              </Link>
+              <Link
+                href="/admin/users"
+                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Users className="w-4 h-4 text-slate-700 shrink-0" />
+                <span>User Roles</span>
+              </Link>
+              <Link
+                href="/admin/departments"
+                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Building2 className="w-4 h-4 text-slate-700 shrink-0" />
+                <span>Departments</span>
+              </Link>
+              <Link
+                href="/admin/audit-logs"
+                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-slate-700 shrink-0" />
+                <span>Audit Trail</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-[11px] text-slate-400 font-semibold">System Status: Optimal</span>
+            <Link href="/admin/settings" className="text-xs font-extrabold text-[#0f365e] hover:underline flex items-center gap-1">
+              <span>Settings</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* RECENT ORGANIZATION ACTIVITY LOG */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Recent Organization Activity</h3>
+              <p className="text-xs text-slate-500">Live immutable audit trail of system events</p>
+            </div>
+            <Link
+              href="/admin/audit-logs"
+              className="text-xs font-bold text-[#0f365e] hover:underline flex items-center gap-1"
+            >
+              <span>View All Logs</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {recentTasks.length === 0 ? (
+          {recentActivity.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400 font-medium">
-              No organization tasks created yet.
+              No recent audit records available.
             </div>
           ) : (
-            <div className="space-y-3">
-              {recentTasks.map((t: any) => (
-                <div key={t.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                  <div>
-                    <p className="font-extrabold text-slate-900">{t.title}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      Assigned by <strong className="capitalize">{t.assigned_by_role}</strong> to <strong className="capitalize">{t.assigned_to_role}</strong> ({t.assignedTo?.name || 'User'})
-                    </p>
+            <div className="space-y-2.5 text-xs">
+              {recentActivity.map((log: any) => (
+                <div
+                  key={log.id}
+                  className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-extrabold text-[11px] flex items-center justify-center">
+                      {(log.actor?.name || 'S')[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 capitalize">
+                        {String(log.action).replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        by <span className="font-semibold text-slate-700">{log.actor?.name || 'System Admin'}</span>
+                      </p>
+                    </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize bg-white text-slate-700">
-                    {t.status}
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {log.created_at ? String(log.created_at).slice(0, 16).replace('T', ' ') : 'Recent'}
                   </span>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Admin Management Quick Actions
-          </h3>
-
-          <div className="space-y-3 text-xs font-bold">
-            <Link
-              href="/admin/tasks"
-              className="p-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl flex items-center gap-3 transition-colors text-slate-800"
-            >
-              <ListTodo className="w-4 h-4 text-[#0f365e]" />
-              <span>Assign Task to HR / Manager</span>
-            </Link>
-
-            <Link
-              href="/admin/users"
-              className="p-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl flex items-center gap-3 transition-colors text-slate-800"
-            >
-              <Users className="w-4 h-4 text-[#0f365e]" />
-              <span>Manage User Accounts</span>
-            </Link>
-
-            <Link
-              href="/admin/performance"
-              className="p-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl flex items-center gap-3 transition-colors text-slate-800"
-            >
-              <TrendingUp className="w-4 h-4 text-[#0f365e]" />
-              <span>Organization Performance Report</span>
-            </Link>
-          </div>
         </div>
       </div>
     </div>

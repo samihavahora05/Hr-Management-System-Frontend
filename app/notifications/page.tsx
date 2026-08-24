@@ -44,7 +44,7 @@ export default function NotificationsPage() {
     <PortalLayout namespace="employee">
       <PageHeader
         title="Notifications Center"
-        description="System activity alerts, leave status updates, task assignments, and payroll publications."
+        description="System activity alerts, leave status updates, task assignments, and organizational announcements."
         action={
           unreadCount > 0 ? (
             <button

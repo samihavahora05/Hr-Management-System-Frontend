@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'BLUEBOXX HRMS — Enterprise People Management',
-  description: 'Role-aware HR Management System for Attendance, Leave, Payroll & AI Insights',
+  description: 'Role-aware HR Management System for Attendance, Leave, Tasks, Performance & AI Insights',
 };
 
 export default function RootLayout({

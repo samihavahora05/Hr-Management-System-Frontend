@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { fetchApi } from '@/lib/api';
 import { Toast } from '@/components/ui/Toast';
-import { Plus } from '@/components/ui/Icon';
+import { Plus, XCircle } from '@/components/ui/Icon';
 
 const DEFAULT_LEAVE_TYPES = [
   { id: 1, name: 'Casual Leave (CL)', annual_quota: 12 },
@@ -43,7 +43,7 @@ export default function EmployeeLeavePage() {
     try {
       const [balRes, reqRes, typeRes] = await Promise.all([
         fetchApi('/leave/balances').catch(() => ({ balances: [] })),
-        fetchApi('/leave/requests').catch(() => ({ leave_requests: [] })),
+        fetchApi('/leave/requests?view_mode=personal').catch(() => ({ leave_requests: [] })),
         fetchApi('/leave/types').catch(() => ({ leave_types: DEFAULT_LEAVE_TYPES })),
       ]);
       setBalances(balRes?.balances || []);
@@ -88,6 +88,19 @@ export default function EmployeeLeavePage() {
     }
   };
 
+  const handleCancelRequest = async (id: number) => {
+    if (!confirm('Are you sure you want to cancel this pending leave request?')) {
+      return;
+    }
+    try {
+      await fetchApi(`/leave/requests/${id}/cancel`, { method: 'POST' });
+      setToastMessage('Leave request cancelled successfully');
+      await loadData();
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to cancel leave request');
+    }
+  };
+
   return (
     <PortalLayout namespace="employee">
       <PageHeader
@@ -104,9 +117,9 @@ export default function EmployeeLeavePage() {
         }
       />
 
-      {/* LEAVE BALANCE CARDS */}
+      {/* LEAVE BALANCES GRID */}
       {balances.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {balances.map((b) => (
             <div key={b.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{b.leave_type?.name || 'Leave'}</p>
@@ -134,22 +147,39 @@ export default function EmployeeLeavePage() {
             </p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-[#0f365e] text-white text-xs font-bold rounded-xl shadow-xs"
+              className="px-4 py-2 bg-[#0f365e] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
             >
               Submit First Application
             </button>
           </div>
         ) : (
           <TablePrimitive
-            headers={['Leave Type', 'Duration', 'Days Requested', 'Reason', 'Status']}
+            headers={['Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Actions']}
             rows={requests.map((r) => [
               <span key="type" className="font-extrabold text-slate-900 text-xs">{r.leave_type?.name || 'Leave'}</span>,
               <span key="dates" className="font-mono text-xs text-slate-700">{r.start_date} to {r.end_date}</span>,
-              <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count} Days</span>,
+              <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
               <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">{r.reason}</span>,
-              <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
+              <Badge
+                key="status"
+                variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : r.status === 'cancelled' ? 'gray' : 'red'}
+              >
                 {r.status}
               </Badge>,
+              <div key="action">
+                {r.status === 'pending' ? (
+                  <button
+                    onClick={() => handleCancelRequest(r.id)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                    title="Cancel pending application"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Cancel</span>
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-400">—</span>
+                )}
+              </div>,
             ])}
           />
         )}
@@ -163,7 +193,7 @@ export default function EmployeeLeavePage() {
             <select
               value={leaveTypeId}
               onChange={(e) => setLeaveTypeId(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
             >
               {leaveTypes.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -213,14 +243,14 @@ export default function EmployeeLeavePage() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg"
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-[#0f365e] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50"
+              className="px-4 py-2 bg-[#0f365e] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {submitting ? 'Submitting...' : 'Submit Request'}
             </button>

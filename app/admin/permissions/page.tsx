@@ -12,7 +12,6 @@ export default function AdminPermissionsPage() {
     { key: 'organization.settings', name: 'Manage Organization Settings', roles: ['admin'] },
     { key: 'audit_logs.view', name: 'View System Audit Logs', roles: ['admin'] },
     { key: 'employees.crud', name: 'HR Employee Management', roles: ['hr'] },
-    { key: 'payroll.process', name: 'Process Organization Payroll', roles: ['hr'] },
     { key: 'leave.approve', name: 'Approve Leave Requests', roles: ['hr', 'manager'] },
     { key: 'team.view', name: 'View Direct Team Roster', roles: ['manager'] },
     { key: 'self_service.access', name: 'Employee Self-Service Access', roles: ['employee', 'manager', 'hr', 'admin'] },

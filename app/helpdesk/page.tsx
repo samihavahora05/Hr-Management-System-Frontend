@@ -17,7 +17,7 @@ export default function HelpdeskPage() {
 
   // Ticket Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [category, setCategory] = useState('Payroll Query');
+  const [category, setCategory] = useState('General HR Query');
   const [priority, setPriority] = useState('medium');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -64,7 +64,7 @@ export default function HelpdeskPage() {
     <PortalLayout namespace="employee">
       <PageHeader
         title="HR & Operations Helpdesk"
-        description="Raise employee support requests for profile updates, payroll clarification, document requests, and HR policy queries."
+        description="Raise employee support requests for profile updates, document requests, and HR policy queries."
         action={
           <button
             onClick={() => setIsModalOpen(true)}
@@ -80,28 +80,28 @@ export default function HelpdeskPage() {
         {loading ? (
           <div className="p-8 text-center text-xs text-slate-400 font-medium animate-pulse">Loading helpdesk tickets...</div>
         ) : tickets.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500 font-medium">No helpdesk tickets raised.</div>
+          <div className="p-8 text-center text-xs text-slate-500 font-medium">No helpdesk tickets raised yet.</div>
         ) : (
           <TablePrimitive
-            headers={['Ticket #', 'Requester', 'Category', 'Priority', 'Subject', 'Status']}
+            headers={['Ticket #', 'Subject', 'Category', 'Priority', 'Status', 'Date Raised']}
             rows={tickets.map((t) => [
-              <span key="num" className="font-mono text-xs font-black text-[#0f365e]">{t.ticket_number}</span>,
-              <span key="req" className="font-extrabold text-slate-900 text-xs">{t.requester?.name || 'Self'}</span>,
-              <span key="cat" className="capitalize text-xs text-slate-700 font-bold px-2 py-0.5 bg-slate-100 rounded border border-slate-200">{t.category}</span>,
-              <Badge key="prio" variant={t.priority === 'urgent' ? 'red' : t.priority === 'high' ? 'amber' : 'neutral'}>
-                {t.priority.toUpperCase()}
+              <span key="id" className="font-mono font-bold text-xs text-[#0f365e]">#{t.id}</span>,
+              <span key="sub" className="font-bold text-xs text-slate-800">{t.subject}</span>,
+              <span key="cat" className="text-xs text-slate-600 font-medium">{t.category}</span>,
+              <Badge key="pri" variant={t.priority === 'urgent' ? 'red' : t.priority === 'high' ? 'yellow' : 'blue'}>
+                {t.priority}
               </Badge>,
-              <span key="subj" className="text-xs text-slate-800 font-bold truncate max-w-xs">{t.subject}</span>,
-              <Badge key="status" variant={t.status === 'resolved' ? 'green' : 'blue'}>
-                {t.status.toUpperCase()}
+              <Badge key="st" variant={t.status === 'open' ? 'yellow' : t.status === 'in_progress' ? 'blue' : 'green'}>
+                {t.status.replace('_', ' ')}
               </Badge>,
+              <span key="dt" className="text-xs font-mono text-slate-500">{t.created_at?.split('T')[0] || 'Today'}</span>,
             ])}
           />
         )}
       </div>
 
       {/* CREATE TICKET MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Raise Support Ticket">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Raise Helpdesk Support Ticket">
         <form onSubmit={handleCreateTicket} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -111,9 +111,9 @@ export default function HelpdeskPage() {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
               >
-                <option value="Payroll Query">Payroll & Tax Query</option>
+                <option value="General HR Query">General HR Query</option>
                 <option value="Profile Change">Profile / Address Change</option>
-                <option value="Document Request">Experience / Salary Certificate</option>
+                <option value="Document Request">Experience / Verification Certificate</option>
                 <option value="Leave Policy">Leave & Attendance Policy</option>
                 <option value="IT Support">IT & Laptop Access</option>
               </select>

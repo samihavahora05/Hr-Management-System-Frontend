@@ -7,8 +7,8 @@ import { TablePrimitive } from '@/components/ui/TablePrimitive';
 import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
-import { fetchApi } from '@/lib/api';
-import { FileText, Download, Plus, Upload, Eye, X } from '@/components/ui/Icon';
+import { fetchApi, downloadApiFile } from '@/lib/api';
+import { FileText, Download, Plus, Upload, Eye, X, Trash2 } from '@/components/ui/Icon';
 
 export default function EmployeeDocumentsPage() {
   const { user } = useAuth();
@@ -19,9 +19,7 @@ export default function EmployeeDocumentsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [type, setType] = useState('contract');
-  const [fileUrl, setFileUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileDataUrl, setFileDataUrl] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -36,8 +34,8 @@ export default function EmployeeDocumentsPage() {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const res = await fetchApi(`/employees/${user.id}`);
-      setDocuments(res.employee?.documents || []);
+      const res = await fetchApi('/documents');
+      setDocuments(res.documents || []);
     } catch (err: any) {
       setDocuments([]);
     } finally {
@@ -59,38 +57,33 @@ export default function EmployeeDocumentsPage() {
       const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       setTitle(cleanName);
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setFileDataUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleUploadDocument = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) return;
 
+    if (!selectedFile) {
+      setToastMessage('Please select a file to upload.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const payloadUrl = fileDataUrl || fileUrl.trim() || `/documents/${Date.now()}_${title.toLowerCase().replace(/\s+/g, '_')}.pdf`;
-      const res = await fetchApi(`/employees/${user.id}/documents`, {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('type', type);
+      formData.append('file', selectedFile);
+
+      const res = await fetchApi('/documents', {
         method: 'POST',
-        body: JSON.stringify({
-          title,
-          type,
-          file_url: payloadUrl,
-        }),
+        body: formData,
       });
 
       setToastMessage(res.message || 'Document uploaded and saved to vault successfully!');
       setIsModalOpen(false);
       setTitle('');
-      setFileUrl('');
       setSelectedFile(null);
-      setFileDataUrl('');
       await loadUserDocuments();
     } catch (err: any) {
       setToastMessage(err.message || 'Failed to upload document');
@@ -99,29 +92,35 @@ export default function EmployeeDocumentsPage() {
     }
   };
 
-  const handleViewDocument = (d: any) => {
-    setPreviewDoc(d);
+  const handleDownloadDocument = async (d: any) => {
+    try {
+      const ext = d.file_url ? d.file_url.split('.').pop() : 'pdf';
+      const cleanTitle = (d.title || 'document').replace(/\s+/g, '_');
+      await downloadApiFile(`/documents/${d.id}/download`, `${cleanTitle}.${ext}`);
+      setToastMessage(`Downloaded: ${d.title}`);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to download document');
+    }
   };
 
-  const handleDownloadDocument = (d: any) => {
-    if (!d.file_url || d.file_url === '#') {
-      setToastMessage(`No downloadable content for ${d.title}`);
+  const handleDeleteDocument = async (id: number) => {
+    if (!confirm('Are you sure you want to remove this document from your vault?')) {
       return;
     }
-    const link = document.createElement('a');
-    link.href = d.file_url;
-    link.download = `${d.title.replace(/\s+/g, '_')}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setToastMessage(`Downloading document: ${d.title}`);
+    try {
+      await fetchApi(`/documents/${id}`, { method: 'DELETE' });
+      setToastMessage('Document deleted successfully');
+      await loadUserDocuments();
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to delete document');
+    }
   };
 
   return (
     <PortalLayout namespace="employee">
       <PageHeader
         title="My Document Vault"
-        description="Employment contracts, identification proofs, tax forms, and certificates"
+        description="Secure storage for employment contracts, identification proofs, tax declarations, and certificates"
         action={
           <button
             onClick={() => setIsModalOpen(true)}
@@ -143,7 +142,7 @@ export default function EmployeeDocumentsPage() {
             <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-sm font-extrabold text-slate-800 mb-1">No Documents Uploaded</p>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
-              Click &quot;Upload New Document&quot; above to select and store identification proofs, certificates, or tax files.
+              Click &quot;Upload New Document&quot; above to select and securely store identification proofs, certificates, or contracts.
             </p>
             <button
               onClick={() => setIsModalOpen(true)}
@@ -160,13 +159,17 @@ export default function EmployeeDocumentsPage() {
                 <FileText className="w-4 h-4 text-[#0f365e]" />
                 <span className="font-extrabold text-slate-900 text-xs">{d.title}</span>
               </div>,
-              <span key="type" className="capitalize text-xs text-slate-700 font-bold px-2 py-0.5 bg-slate-100 rounded border border-slate-200">{d.type}</span>,
-              <span key="date" className="font-mono text-xs text-slate-500">{d.created_at?.slice(0, 10) || '2026-08-19'}</span>,
+              <span key="type" className="capitalize text-xs text-slate-700 font-bold px-2 py-0.5 bg-slate-100 rounded border border-slate-200">
+                {d.type}
+              </span>,
+              <span key="date" className="font-mono text-xs text-slate-500">
+                {d.created_at ? String(d.created_at).slice(0, 10) : 'Today'}
+              </span>,
               <div key="actions" className="flex items-center gap-2">
                 <button
-                  onClick={() => handleViewDocument(d)}
+                  onClick={() => setPreviewDoc(d)}
                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-200 transition-colors cursor-pointer"
-                  title="View Document"
+                  title="View Document Details"
                 >
                   <Eye className="w-3.5 h-3.5 text-sky-600" />
                   <span>View</span>
@@ -174,10 +177,17 @@ export default function EmployeeDocumentsPage() {
                 <button
                   onClick={() => handleDownloadDocument(d)}
                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                  title="Download Document"
+                  title="Download Secure File"
                 >
                   <Download className="w-3.5 h-3.5 text-slate-600" />
                   <span>Download</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteDocument(d.id)}
+                  className="inline-flex items-center gap-1 px-2 py-1 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-lg border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                  title="Delete Document"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>,
             ])}
@@ -186,7 +196,7 @@ export default function EmployeeDocumentsPage() {
       </div>
 
       {/* UPLOAD DOCUMENT MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Upload Document to Vault">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Upload Document to Secure Vault">
         <form onSubmit={handleUploadDocument} className="space-y-4">
           {/* BROWSE FILE DROPZONE */}
           <div>
@@ -194,9 +204,10 @@ export default function EmployeeDocumentsPage() {
             <div className="border-2 border-dashed border-slate-300 hover:border-[#0f365e] rounded-xl p-4 bg-slate-50 hover:bg-slate-100/50 transition-all text-center relative cursor-pointer group">
               <input
                 type="file"
+                required
                 onChange={handleFileChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
               />
               {selectedFile ? (
                 <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-emerald-200 shadow-2xs">
@@ -212,7 +223,6 @@ export default function EmployeeDocumentsPage() {
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedFile(null);
-                      setFileDataUrl('');
                     }}
                     className="p-1 text-slate-400 hover:text-rose-600 rounded-md z-20 cursor-pointer"
                     title="Remove selected file"
@@ -226,14 +236,14 @@ export default function EmployeeDocumentsPage() {
                   <p className="text-xs font-extrabold text-slate-700">
                     Click to <span className="text-[#0f365e] underline">Browse File</span> or drag & drop
                   </p>
-                  <p className="text-[10px] text-slate-400">PDF, DOCX, PNG, JPG, TXT up to 10MB</p>
+                  <p className="text-[10px] text-slate-400">PDF, DOCX, PNG, JPG up to 10MB</p>
                 </div>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Document Title</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Document Title *</label>
             <input
               type="text"
               required
@@ -244,32 +254,20 @@ export default function EmployeeDocumentsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Document Category</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white capitalize"
-              >
-                <option value="contract">Contract & Agreement</option>
-                <option value="identity">Identity Proof</option>
-                <option value="tax">Tax & Compliance</option>
-                <option value="certificate">Certification / Degree</option>
-                <option value="other">Other Document</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">File URL (Optional Link)</label>
-              <input
-                type="text"
-                value={fileUrl}
-                onChange={(e) => setFileUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                placeholder="Optional external link or URL"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Document Category *</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white capitalize"
+            >
+              <option value="contract">Contract & Agreement</option>
+              <option value="identity">Identity Proof (Govt ID)</option>
+              <option value="tax">Tax & Compliance Form</option>
+              <option value="certificate">Certification / Degree</option>
+              <option value="resume">Resume / CV</option>
+              <option value="other">Other Document</option>
+            </select>
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
@@ -282,18 +280,18 @@ export default function EmployeeDocumentsPage() {
             </button>
             <button
               type="submit"
-              disabled={submitting || (!selectedFile && !fileUrl && !title)}
+              disabled={submitting || !selectedFile || !title}
               className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
             >
               <Upload className="w-4 h-4" />
-              <span>{submitting ? 'Uploading to DB...' : 'Save to Vault'}</span>
+              <span>{submitting ? 'Uploading to Vault...' : 'Save to Vault'}</span>
             </button>
           </div>
         </form>
       </Modal>
 
       {/* DOCUMENT PREVIEW MODAL */}
-      <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={`Document Preview: ${previewDoc?.title || ''}`}>
+      <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc?.title || ''}`}>
         <div className="space-y-4">
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
             <div>
@@ -309,25 +307,17 @@ export default function EmployeeDocumentsPage() {
             </button>
           </div>
 
-          <div className="max-h-[60vh] overflow-auto border border-slate-200 rounded-xl p-3 bg-slate-100 flex justify-center items-center min-h-[250px]">
-            {previewDoc?.file_url?.startsWith('data:image') ? (
-              <img src={previewDoc.file_url} alt={previewDoc.title} className="max-w-full max-h-[50vh] object-contain rounded-lg shadow-xs" />
-            ) : previewDoc?.file_url?.startsWith('data:application/pdf') ? (
-              <iframe src={previewDoc.file_url} className="w-full h-[50vh] rounded-lg" title={previewDoc.title} />
-            ) : (
-              <div className="text-center p-8 space-y-3">
-                <FileText className="w-12 h-12 text-[#0f365e] mx-auto" />
-                <p className="text-sm font-extrabold text-slate-800">{previewDoc?.title}</p>
-                <p className="text-xs text-slate-500">Document saved safely in vault database</p>
-                <button
-                  onClick={() => handleDownloadDocument(previewDoc)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Document File</span>
-                </button>
-              </div>
-            )}
+          <div className="text-center p-8 space-y-3 bg-slate-50 rounded-xl border border-slate-200">
+            <FileText className="w-12 h-12 text-[#0f365e] mx-auto" />
+            <p className="text-sm font-extrabold text-slate-800">{previewDoc?.title}</p>
+            <p className="text-xs text-slate-500">Document is securely stored on private company disk storage</p>
+            <button
+              onClick={() => handleDownloadDocument(previewDoc)}
+              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download & Open Document</span>
+            </button>
           </div>
         </div>
       </Modal>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
-import { LogOut, Search, Settings, CheckCircle2, Clock } from '@/components/ui/Icon';
+import { LogOut, Search, Settings, CheckCircle2, Clock, Bell } from '@/components/ui/Icon';
 import { Toast } from '@/components/ui/Toast';
 
 function formatTimeDisplay(timeStr?: string | null): string {
@@ -35,15 +35,30 @@ export function Topbar() {
   const [loadingAttendance, setLoadingAttendance] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       loadTodayAttendance();
+      loadUnreadNotifications();
+      const interval = setInterval(loadUnreadNotifications, 20000);
+      return () => clearInterval(interval);
     } else {
       setLoadingAttendance(false);
     }
-  }, [user]);
+  }, [user, pathname]);
+
+  const loadUnreadNotifications = async () => {
+    try {
+      const res = await fetchApi('/notifications');
+      if (typeof res.unread_count === 'number') {
+        setUnreadCount(res.unread_count);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
 
   const loadTodayAttendance = async () => {
     try {
@@ -225,8 +240,21 @@ export function Topbar() {
         {/* User Account Controls */}
         <div className="flex items-center gap-3 border-l border-[#c3c6cf] pl-4">
           <Link
+            href="/notifications"
+            className="text-slate-500 hover:text-[#0f365e] transition-colors relative p-1"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 bg-rose-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
             href={activeNamespace === 'admin' ? '/admin/settings' : `/${activeNamespace}/dashboard`}
-            className="text-slate-500 hover:text-[#0f365e] transition-colors"
+            className="text-slate-500 hover:text-[#0f365e] transition-colors p-1"
             title="Settings"
           >
             <Settings className="w-4 h-4" />
@@ -241,7 +269,7 @@ export function Topbar() {
 
           <button
             onClick={handleLogout}
-            className="text-slate-400 hover:text-[#ba1a1a] transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-[#ba1a1a] transition-colors cursor-pointer p-1"
             title="Sign Out"
           >
             <LogOut className="w-4 h-4" />

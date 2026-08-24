@@ -8,9 +8,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
 import { fetchApi } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
 import { exportToCSV } from '@/lib/export';
-import { Plus, Download, CheckCircle, XCircle, Clock } from '@/components/ui/Icon';
+import { Plus, Download, CheckCircle, XCircle, Clock, Users, UserCheck } from '@/components/ui/Icon';
 
 const DEFAULT_LEAVE_TYPES = [
   { id: 1, name: 'Casual Leave (CL)', annual_quota: 12 },
@@ -22,8 +21,9 @@ const DEFAULT_LEAVE_TYPES = [
 ];
 
 export default function HRLeavePage() {
-  const { user } = useAuth();
-  const [requests, setRequests] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'org' | 'personal'>('org');
+  const [orgRequests, setOrgRequests] = useState<any[]>([]);
+  const [personalRequests, setPersonalRequests] = useState<any[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<any[]>(DEFAULT_LEAVE_TYPES);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -36,6 +36,12 @@ export default function HRLeavePage() {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Reject Modal
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,13 +51,16 @@ export default function HRLeavePage() {
   const loadLeaveRequests = async () => {
     setLoading(true);
     try {
-      const url = statusFilter ? `/leave/requests?status=${statusFilter}` : '/leave/requests';
-      const [reqRes, typeRes] = await Promise.all([
-        fetchApi(url),
+      const statusParam = statusFilter ? `?status=${statusFilter}` : '';
+      const [reqRes, personalRes, typeRes] = await Promise.all([
+        fetchApi(`/leave/requests${statusParam}`),
+        fetchApi('/leave/requests?view_mode=personal'),
         fetchApi('/leave/types').catch(() => ({ leave_types: DEFAULT_LEAVE_TYPES })),
       ]);
 
-      setRequests(reqRes.leave_requests || []);
+      setOrgRequests(reqRes.leave_requests || []);
+      setPersonalRequests(personalRes.leave_requests || []);
+
       const fetchedTypes = typeRes.leave_types?.length > 0 ? typeRes.leave_types : DEFAULT_LEAVE_TYPES;
       setLeaveTypes(fetchedTypes);
       if (fetchedTypes?.length > 0) {
@@ -78,7 +87,7 @@ export default function HRLeavePage() {
         }),
       });
 
-      setToastMessage('HR personal leave request submitted successfully! Routed to Administrator for approval.');
+      setToastMessage('HR personal leave request submitted successfully.');
       setIsModalOpen(false);
       setReason('');
       setStartDate('');
@@ -91,30 +100,73 @@ export default function HRLeavePage() {
     }
   };
 
+  const handleApprove = async (id: number) => {
+    try {
+      const res = await fetchApi(`/leave/requests/${id}/approve`, { method: 'POST' });
+      setToastMessage(res.message || 'Leave request approved successfully!');
+      await loadLeaveRequests();
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to approve leave request');
+    }
+  };
+
+  const openRejectModal = (id: number) => {
+    setSelectedRequestId(id);
+    setRejectionReason('');
+    setRejectModalOpen(true);
+  };
+
+  const handleConfirmReject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequestId) return;
+
+    setRejecting(true);
+    try {
+      const res = await fetchApi(`/leave/requests/${selectedRequestId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ rejection_reason: rejectionReason }),
+      });
+      setToastMessage(res.message || 'Leave request declined.');
+      setRejectModalOpen(false);
+      setSelectedRequestId(null);
+      setRejectionReason('');
+      await loadLeaveRequests();
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to decline leave request');
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   const handleExportExcel = () => {
-    if (requests.length === 0) {
-      setToastMessage('No personal leave application data available to export.');
+    const dataToExport = activeTab === 'org' ? orgRequests : personalRequests;
+    if (dataToExport.length === 0) {
+      setToastMessage('No leave records available to export.');
       return;
     }
-    const headers = ['Leave Type', 'Start Date', 'End Date', 'Days Count', 'Reason', 'Status', 'Decision'];
-    const rows = requests.map((r) => [
+    const headers = ['Employee', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Reason', 'Status', 'Approver'];
+    const rows = dataToExport.map((r) => [
+      r.user?.name || 'Unknown',
       r.leave_type?.name || 'Leave',
       r.start_date,
       r.end_date,
       r.days_count,
-      r.reason || 'N/A',
+      r.reason || '',
       r.status,
-      r.approver?.name ? `Processed by ${r.approver.name}` : 'Pending Admin Decision',
+      r.approver?.name || '',
     ]);
-    exportToCSV('My_HR_Leave_Applications_Report', headers, rows);
-    setToastMessage('Leave records exported to Excel CSV format successfully!');
+
+    exportToCSV(`organization_leave_records_${Date.now()}`, headers, rows);
+    setToastMessage('Exported leave records to CSV successfully.');
   };
+
+  const pendingOrgCount = orgRequests.filter((r) => r.status === 'pending').length;
 
   return (
     <PortalLayout namespace="hr">
       <PageHeader
-        title="My Leave & Applications"
-        description="Submit personal leave requests directly to the Administrator and monitor your approval history"
+        title="Organization Leave & Time-Off Management"
+        description="Review and process organization-wide leave requests, enforce compliance, and manage personal records"
         action={
           <div className="flex items-center gap-2">
             <button
@@ -137,83 +189,159 @@ export default function HRLeavePage() {
         }
       />
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs mb-6 flex justify-between items-center">
-        <span className="text-xs font-bold text-slate-700">Filter by Application Status</span>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+      {/* TAB SWITCHER */}
+      <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
+        <button
+          onClick={() => setActiveTab('org')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'org'
+              ? 'bg-[#0f365e] text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
         >
-          <option value="">All Applications</option>
-          <option value="pending">Pending Admin Approval</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
+          <Users className="w-4 h-4" />
+          <span>Organization Requests</span>
+          {pendingOrgCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-amber-950">
+              {pendingOrgCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('personal')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'personal'
+              ? 'bg-[#0f365e] text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <UserCheck className="w-4 h-4" />
+          <span>My Personal Applications</span>
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-xs text-slate-400 font-medium">
-            Loading your leave applications...
+      {activeTab === 'org' ? (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-700">Filter by Status</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+            >
+              <option value="">All Applications</option>
+              <option value="pending">Pending Approval</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
-        ) : requests.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500 font-medium">
-            You have not submitted any leave requests yet. Click &quot;Apply for Leave&quot; above to request time off.
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+            {loading ? (
+              <div className="p-8 text-center text-xs text-slate-400 font-medium">
+                Loading leave applications...
+              </div>
+            ) : orgRequests.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500 font-medium">
+                No organization leave applications found matching current criteria.
+              </div>
+            ) : (
+              <TablePrimitive
+                headers={['Employee', 'Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Approval Status']}
+                rows={orgRequests.map((r) => [
+                  <div key="emp">
+                    <p className="font-extrabold text-slate-900 text-xs">{r.user?.name || 'Staff'}</p>
+                    <p className="text-[10px] font-mono text-slate-400">{r.user?.department || ''}</p>
+                  </div>,
+                  <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
+                  <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
+                  <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
+                  <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block" title={r.reason}>{r.reason}</span>,
+                  <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
+                    {r.status}
+                  </Badge>,
+                  <div key="actions" className="flex items-center gap-1.5">
+                    {r.status === 'pending' ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold rounded-lg">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Awaiting Admin Approval</span>
+                      </span>
+                    ) : r.status === 'approved' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Approved by {r.approver?.name || 'Admin'}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700" title={r.rejection_reason}>
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Declined {r.rejection_reason ? `(${r.rejection_reason})` : ''}</span>
+                      </span>
+                    )}
+                  </div>,
+                ])}
+              />
+            )}
           </div>
-        ) : (
-          <TablePrimitive
-            headers={['Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Admin Decision']}
-            rows={requests.map((r) => [
-              <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
-              <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
-              <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
-              <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">{r.reason}</span>,
-              <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
-                {r.status === 'pending' ? 'Pending Admin Approval' : r.status === 'approved' ? 'Approved by Admin' : 'Rejected by Admin'}
-              </Badge>,
-              <div key="decision" className="text-xs">
-                {r.status === 'approved' ? (
-                  <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    Approved {r.approver?.name ? `(${r.approver.name})` : ''}
-                  </span>
-                ) : r.status === 'rejected' ? (
-                  <span
-                    className="text-[11px] font-semibold text-rose-700 flex items-center gap-1 cursor-help"
-                    title={r.rejection_reason || 'Declined'}
-                  >
-                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                    {r.rejection_reason || 'Declined by Admin'}
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-medium text-amber-700 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    Awaiting Admin Approval
-                  </span>
-                )}
-              </div>,
-            ])}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center text-xs text-slate-400 font-medium">
+              Loading your personal leave applications...
+            </div>
+          ) : personalRequests.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-500 font-medium">
+              You have not submitted any personal leave requests.
+            </div>
+          ) : (
+            <TablePrimitive
+              headers={['Leave Type', 'Duration', 'Days', 'Reason', 'Approval Status', 'Decision']}
+              rows={personalRequests.map((r) => [
+                <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
+                <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
+                <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
+                <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">{r.reason}</span>,
+                <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
+                  {r.status}
+                </Badge>,
+                <div key="decision" className="text-xs">
+                  {r.status === 'approved' ? (
+                    <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      Approved {r.approver?.name ? `(${r.approver.name})` : ''}
+                    </span>
+                  ) : r.status === 'rejected' ? (
+                    <span className="text-[11px] font-semibold text-rose-700 flex items-center gap-1" title={r.rejection_reason}>
+                      <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                      {r.rejection_reason || 'Declined'}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-amber-700 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      Pending Decision
+                    </span>
+                  )}
+                </div>,
+              ])}
+            />
+          )}
+        </div>
+      )}
 
       {/* APPLY LEAVE MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Submit HR Leave Application">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Submit Personal Leave Request">
         <form onSubmit={handleApplyLeave} className="space-y-4">
-          <p className="text-xs text-slate-600 font-medium">
-            Your personal leave application will be routed directly to the System Administrator for review and approval.
-          </p>
-
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Select Leave Category</label>
             <select
               value={leaveTypeId}
               onChange={(e) => setLeaveTypeId(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
             >
               {leaveTypes.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name} (Quota: {t.annual_quota || t.max_days_per_year || 12} days/yr)
+                  {t.name} (Annual Quota: {t.annual_quota || 12} days)
                 </option>
               ))}
             </select>
@@ -251,7 +379,7 @@ export default function HRLeavePage() {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-              placeholder="State your reason for personal leave..."
+              placeholder="State reason..."
             />
           </div>
 
@@ -259,16 +387,53 @@ export default function HRLeavePage() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg"
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={submitting || !startDate || !endDate || !reason.trim()}
-              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg disabled:opacity-50"
+              disabled={submitting}
+              className="px-4 py-2 bg-[#0f365e] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? 'Submitting...' : 'Submit to Admin'}
+              {submitting ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* REJECT LEAVE MODAL */}
+      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Decline Leave Request">
+        <form onSubmit={handleConfirmReject} className="space-y-4">
+          <p className="text-xs text-slate-600">
+            Please provide a brief reason for declining this leave request:
+          </p>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Rejection Reason</label>
+            <textarea
+              required
+              rows={3}
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="e.g. Incomplete handover, departmental coverage..."
+            />
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setRejectModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={rejecting}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {rejecting ? 'Processing...' : 'Confirm Decline'}
             </button>
           </div>
         </form>

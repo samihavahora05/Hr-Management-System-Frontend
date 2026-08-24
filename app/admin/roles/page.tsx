@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 export default function AdminRolesPage() {
   const roles = [
     { id: 1, name: 'admin', display_name: 'Admin', description: 'Full system configuration & administrative control' },
-    { id: 2, name: 'hr', display_name: 'HR Manager', description: 'Manages employee records, leave approvals, and payroll' },
+    { id: 2, name: 'hr', display_name: 'HR Manager', description: 'Manages employee records, recruitment ATS, and leave' },
     { id: 3, name: 'manager', display_name: 'Team Lead / Manager', description: 'Manages team attendance and leave approvals' },
     { id: 4, name: 'employee', display_name: 'Employee', description: 'Employee self-service access' },
   ];

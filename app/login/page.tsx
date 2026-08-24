@@ -82,7 +82,7 @@ export default function LoginPage() {
 
           <p className="text-[13px] text-slate-300/90 font-normal leading-relaxed">
             Enterprise operations portal for workforce attendance, statutory leave
-            quotas, automated payroll, and Phase 7 AI attrition-risk insights.
+            quotas, task tracking, and AI attrition-risk insights.
           </p>
         </div>
       </div>

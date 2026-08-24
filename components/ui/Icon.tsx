@@ -22,6 +22,21 @@ export const Users = (props: IconProps) => (
   </svg>
 );
 
+export const User = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+export const UserCheck = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <polyline points="16 11 18 13 22 9" />
+  </svg>
+);
+
 export const Clock = (props: IconProps) => (
   <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
     <circle cx="12" cy="12" r="10" />
@@ -181,14 +196,6 @@ export const ShieldCheck = (props: IconProps) => (
   </svg>
 );
 
-export const UserCheck = (props: IconProps) => (
-  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="8.5" cy="7" r="4" />
-    <polyline points="17 11 19 13 23 9" />
-  </svg>
-);
-
 export const UserMinus = (props: IconProps) => (
   <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -204,10 +211,10 @@ export const Briefcase = (props: IconProps) => (
   </svg>
 );
 
-export const User = (props: IconProps) => (
+export const Send = (props: IconProps) => (
   <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
+    <path d="m22 2-7 20-4-9-9-4Z" />
+    <path d="M22 2 11 13" />
   </svg>
 );
 
@@ -384,5 +391,19 @@ export const Target = (props: IconProps) => (
     <circle cx="12" cy="12" r="10" />
     <circle cx="12" cy="12" r="6" />
     <circle cx="12" cy="12" r="2" />
+  </svg>
+);
+
+export const Sparkles = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    <path d="M5 3v4M3 5h4M19 17v4M17 19h4" />
+  </svg>
+);
+
+export const Bot = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <rect width="18" height="12" x="3" y="6" rx="2" />
+    <path d="M9 13h.01M15 13h.01M12 2v4M2 12h1M21 12h1" />
   </svg>
 );

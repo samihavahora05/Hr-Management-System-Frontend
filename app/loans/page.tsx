@@ -60,8 +60,8 @@ export default function LoansPage() {
   return (
     <PortalLayout namespace="employee">
       <PageHeader
-        title="Employee Loans & Salary Advances"
-        description="Request interest-free company loans and salary advances with automatic monthly payroll deduction plans."
+        title="Employee Loans & Advances"
+        description="Request interest-free company loans and advances with scheduled monthly repayment plans."
         action={
           <button
             onClick={() => setIsModalOpen(true)}

@@ -452,7 +452,7 @@ export default function HRRecruitmentPage() {
           </div>
 
           <p className="text-[11px] text-slate-500 italic">
-            Onboarding will generate an Employee ID, auto-allocate leave balances, setup Indian statutory payroll rules, and create their user login account.
+            Onboarding will generate an Employee ID, auto-allocate statutory leave balances, and create their active employee login account.
           </p>
 
           <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">

@@ -212,16 +212,20 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
     }
   };
 
-  const handleToggleSubtask = async (taskId: number, subtaskId: string | number) => {
+  const handleToggleSubtask = async (task: Task, subtaskId: string | number) => {
+    if (!isTaskAssignee(task)) {
+      setToastMessage('Only the assigned employee performing this task can update checklist items.');
+      return;
+    }
     try {
-      const res = await fetchApi(`/tasks/${taskId}/toggle-subtask`, {
+      const res = await fetchApi(`/tasks/${task.id}/toggle-subtask`, {
         method: 'POST',
         body: JSON.stringify({ subtask_id: subtaskId }),
       });
       const updatedTask = res.task;
 
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
-      if (selectedTask && selectedTask.id === taskId) {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updatedTask : t)));
+      if (selectedTask && selectedTask.id === task.id) {
         setSelectedTask(updatedTask);
       }
     } catch (err: any) {
@@ -413,17 +417,6 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                   }`}
                 >
                   {isHRMode ? 'All Organization Tasks' : 'Team Member Tasks'}
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('assigned_by_me')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'assigned_by_me'
-                      ? 'bg-white text-[#0f365e] shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Tasks Assigned by Me
                 </button>
 
                 <button
@@ -1201,25 +1194,36 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                   </span>
                 </div>
                 <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  {selectedTask.subtasks.map((st) => (
-                    <label
-                      key={st.id}
-                      className="flex items-center justify-between p-2 bg-white rounded-md border border-slate-100 text-xs cursor-pointer hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={st.completed}
-                          onChange={() => handleToggleSubtask(selectedTask.id, st.id)}
-                          className="w-4 h-4 text-[#0f365e] rounded border-slate-300"
-                        />
-                        <span className={st.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'}>
-                          {st.text || (st as any).title || ''}
-                        </span>
-                      </div>
-                      {st.completed && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                    </label>
-                  ))}
+                  {selectedTask.subtasks.map((st) => {
+                    const canEditChecklist = isTaskAssignee(selectedTask);
+                    return (
+                      <label
+                        key={st.id}
+                        className={`flex items-center justify-between p-2 bg-white rounded-md border border-slate-100 text-xs transition-colors ${
+                          canEditChecklist ? 'cursor-pointer hover:bg-slate-50' : 'cursor-not-allowed opacity-90'
+                        }`}
+                        title={!canEditChecklist ? 'Only the assigned employee performing this task can update checklist items' : undefined}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={st.completed}
+                            disabled={!canEditChecklist}
+                            onChange={() => canEditChecklist && handleToggleSubtask(selectedTask, st.id)}
+                            className="w-4 h-4 text-[#0f365e] rounded border-slate-300 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                          />
+                          <span className={st.completed ? 'line-through text-slate-400 font-medium' : 'text-slate-800 font-medium'}>
+                            {st.text || (st as any).title || ''}
+                          </span>
+                        </div>
+                        {st.completed ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        ) : !canEditChecklist ? (
+                          <span className="text-[10px] text-slate-400 font-medium italic">Pending Assignee</span>
+                        ) : null}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}

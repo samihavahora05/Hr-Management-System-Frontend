@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, canAccessNamespace, getRoleDefaultRoute } from '@/lib/auth-context';
 import { useTheme } from '@/lib/theme-context';
+import { fetchApi } from '@/lib/api';
 import {
   LayoutDashboard,
   Users,
@@ -24,6 +25,7 @@ import {
   User,
   LogOut,
   ListTodo,
+  Sparkles,
 } from '@/components/ui/Icon';
 
 export function Sidebar() {
@@ -68,6 +70,7 @@ export function Sidebar() {
   const menuItemsMap = {
     admin: [
       { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+      { label: 'AI Assistant', href: '/admin/assistant', icon: Sparkles },
       { label: 'Users & Master', href: '/admin/users', icon: Users },
       { label: 'Departments', href: '/admin/departments', icon: Building2 },
       { label: 'Tasks', href: '/admin/tasks', icon: ListTodo },
@@ -88,6 +91,7 @@ export function Sidebar() {
     ],
     hr: [
       { label: 'Dashboard', href: '/hr/dashboard', icon: LayoutDashboard },
+      { label: 'HR Assistant', href: '/hr/assistant', icon: Sparkles },
       { label: 'Employees', href: '/hr/employees', icon: Users },
       { label: 'Recruitment & ATS', href: '/hr/recruitment', icon: UserCheck },
       { label: 'Tasks', href: '/hr/tasks', icon: ListTodo },
@@ -103,6 +107,7 @@ export function Sidebar() {
     ],
     manager: [
       { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
+      { label: 'Team Assistant', href: '/manager/assistant', icon: Sparkles },
       { label: 'Team Leaders', href: '/manager/team', icon: Users },
       { label: 'Employees', href: '/manager/employees', icon: UserCheck },
       { label: 'Team Tasks', href: '/manager/tasks', icon: ListTodo },
@@ -114,6 +119,7 @@ export function Sidebar() {
     ],
     team_leader: [
       { label: 'Dashboard', href: '/team-leader/dashboard', icon: LayoutDashboard },
+      { label: 'Team Assistant', href: '/team-leader/assistant', icon: Sparkles },
       { label: 'My Team', href: '/team-leader/team', icon: Users },
       { label: 'Tasks', href: '/team-leader/tasks', icon: ListTodo },
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
@@ -123,6 +129,7 @@ export function Sidebar() {
     ],
     employee: [
       { label: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard },
+      { label: 'AI Assistant', href: '/employee/assistant', icon: Sparkles },
       { label: 'My Tasks', href: '/employee/tasks', icon: ListTodo },
       { label: 'Attendance', href: '/employee/attendance', icon: Clock },
       { label: 'Leave', href: '/employee/leave', icon: CalendarDays },
@@ -135,6 +142,29 @@ export function Sidebar() {
       { label: 'Profile', href: '/employee/profile', icon: User },
     ],
   };
+
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUnreadNotifications = async () => {
+      try {
+        const res = await fetchApi('/notifications');
+        if (isMounted && typeof res.unread_count === 'number') {
+          setUnreadCount(res.unread_count);
+        }
+      } catch (err) {
+        // Silently ignore background polling errors
+      }
+    };
+
+    fetchUnreadNotifications();
+    const interval = setInterval(fetchUnreadNotifications, 20000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [pathname]);
 
   const currentMenuItems = menuItemsMap[activeNamespace] || menuItemsMap.employee;
 
@@ -194,22 +224,37 @@ export function Sidebar() {
         {currentMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isNotificationItem = item.href === '/notifications';
+          const hasUnread = isNotificationItem && unreadCount > 0;
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              title={isCollapsed ? item.label : undefined}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 group ${
+              title={isCollapsed ? (hasUnread ? `${item.label} (${unreadCount} unread)` : item.label) : undefined}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 group relative ${
                 isActive
                   ? 'bg-slate-100 text-[#0f365e] font-bold border border-[#c3c6cf] shadow-2xs'
                   : 'text-slate-600 hover:text-[#0f365e] hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#0f365e]' : 'text-slate-400 group-hover:text-[#0f365e]'}`} />
+                <div className="relative shrink-0">
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[#0f365e]' : 'text-slate-400 group-hover:text-[#0f365e]'}`} />
+                  {isCollapsed && hasUnread && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 bg-rose-600 text-white rounded-full text-[8px] font-black flex items-center justify-center shadow-xs animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
                 {!isCollapsed && <span className="truncate">{item.label}</span>}
               </div>
+
+              {!isCollapsed && hasUnread && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 min-w-[20px] text-[10px] font-black text-white bg-rose-600 rounded-full shadow-xs animate-pulse">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}

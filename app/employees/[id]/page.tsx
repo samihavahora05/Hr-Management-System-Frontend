@@ -7,23 +7,23 @@ import { Topbar } from '@/components/layout/Topbar';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, downloadApiFile } from '@/lib/api';
 import Link from 'next/link';
-import { ArrowLeft, FileText, Download } from '@/components/ui/Icon';
+import { ArrowLeft, FileText, Download, Upload, Plus, Calendar, Clock, User } from '@/components/ui/Icon';
 
 export default function EmployeeDetailPage() {
   const params = useParams();
   const id = params?.id;
 
   const [employee, setEmployee] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'history' | 'personal'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'leaves' | 'personal'>('overview');
   const [loading, setLoading] = useState(true);
 
   // Document upload modal
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [docTitle, setDocTitle] = useState('');
   const [docType, setDocType] = useState('contract');
-  const [docUrl, setDocUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -45,25 +45,44 @@ export default function EmployeeDetailPage() {
 
   const handleDocUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedFile) {
+      setToastMessage('Please choose a file to upload');
+      return;
+    }
+
     setUploading(true);
     try {
-      await fetchApi(`/employees/${id}/documents`, {
+      const formData = new FormData();
+      formData.append('title', docTitle);
+      formData.append('type', docType);
+      formData.append('file', selectedFile);
+      formData.append('user_id', String(id));
+
+      await fetchApi('/documents', {
         method: 'POST',
-        body: JSON.stringify({
-          title: docTitle,
-          type: docType,
-          file_url: docUrl || `/documents/${docType}_${id}.pdf`,
-        }),
+        body: formData,
       });
+
       setIsDocModalOpen(false);
       setDocTitle('');
-      setDocUrl('');
-      setToastMessage('Document saved successfully');
+      setSelectedFile(null);
+      setToastMessage('Document uploaded and saved to vault successfully');
       await loadDetail();
     } catch (err: any) {
       setToastMessage(err.message || 'Document upload failed');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDownloadDoc = async (d: any) => {
+    try {
+      const ext = d.file_url ? d.file_url.split('.').pop() : 'pdf';
+      const cleanTitle = (d.title || 'document').replace(/\s+/g, '_');
+      await downloadApiFile(`/documents/${d.id}/download`, `${cleanTitle}.${ext}`);
+      setToastMessage(`Downloaded ${d.title}`);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to download document');
     }
   };
 
@@ -126,7 +145,9 @@ export default function EmployeeDetailPage() {
                     {employee.designation} • {employee.employee_code}
                   </p>
                 </div>
-                <Badge status={employee.status || 'active'} />
+                <Badge variant={employee.status === 'active' ? 'green' : employee.status === 'on_leave' ? 'yellow' : 'red'}>
+                  {employee.status || 'Active'}
+                </Badge>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100 text-xs font-medium text-slate-600">
@@ -157,6 +178,14 @@ export default function EmployeeDetailPage() {
               Overview
             </button>
             <button
+              onClick={() => setActiveTab('leaves')}
+              className={`pb-3 border-b-2 transition-all cursor-pointer ${
+                activeTab === 'leaves' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Leave Balances ({employee.leave_balances?.length || 0})
+            </button>
+            <button
               onClick={() => setActiveTab('documents')}
               className={`pb-3 border-b-2 transition-all cursor-pointer ${
                 activeTab === 'documents' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'
@@ -170,15 +199,13 @@ export default function EmployeeDetailPage() {
                 activeTab === 'personal' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
-              Personal Info
+              Personal Details
             </button>
           </div>
 
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <h3 className="text-base font-bold text-slate-900">Employment Overview</h3>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Joining Date</span>
@@ -189,7 +216,7 @@ export default function EmployeeDetailPage() {
 
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">System Role</span>
-                  <div className="text-lg font-bold text-slate-900 mt-1 capitalize">{employee.role?.display_name || 'Staff'}</div>
+                  <div className="text-lg font-bold text-slate-900 mt-1 capitalize">{employee.role?.display_name || employee.role?.name || 'Staff'}</div>
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
@@ -203,42 +230,22 @@ export default function EmployeeDetailPage() {
             </div>
           )}
 
-          {/* TAB 2: DOCUMENTS */}
-          {activeTab === 'documents' && (
+          {/* TAB 2: LEAVE BALANCES */}
+          {activeTab === 'leaves' && (
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="text-base font-bold text-slate-900">Official Documents</h3>
-                <button
-                  onClick={() => setIsDocModalOpen(true)}
-                  className="px-3 py-1.5 bg-[#0f365e] text-white font-bold rounded-lg text-xs cursor-pointer"
-                >
-                  + Upload Document
-                </button>
-              </div>
-
-              {employee.documents?.length === 0 ? (
-                <p className="text-xs text-slate-500 py-4 text-center">No documents uploaded for this employee yet.</p>
+              <h3 className="text-base font-bold text-slate-900">Allocated Leave Quotas</h3>
+              {(!employee.leave_balances || employee.leave_balances.length === 0) ? (
+                <p className="text-xs text-slate-500 py-4 text-center">No leave balance records assigned yet.</p>
               ) : (
-                <div className="space-y-3 text-xs">
-                  {employee.documents?.map((d: any) => (
-                    <div key={d.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-700" />
-                        <div>
-                          <p className="font-bold text-slate-900">{d.title}</p>
-                          <p className="text-[10px] text-slate-500 capitalize">{d.type} • Uploaded {d.created_at?.slice(0, 10)}</p>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {employee.leave_balances.map((lb: any) => (
+                    <div key={lb.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <p className="text-xs font-bold text-slate-700">{lb.leave_type?.name || 'Leave'}</p>
+                      <div className="flex items-baseline gap-2 mt-2">
+                        <span className="text-2xl font-black text-[#0f365e]">{lb.remaining}</span>
+                        <span className="text-xs text-slate-500 font-medium">/ {lb.allocated} days</span>
                       </div>
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setToastMessage(`Downloading ${d.title}`);
-                        }}
-                        className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-800 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Download
-                      </a>
+                      <p className="text-[10px] text-slate-400 mt-1">{lb.used} days taken</p>
                     </div>
                   ))}
                 </div>
@@ -246,77 +253,145 @@ export default function EmployeeDetailPage() {
             </div>
           )}
 
-          {/* TAB 3: PERSONAL INFO */}
+          {/* TAB 3: DOCUMENTS */}
+          {activeTab === 'documents' && (
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">Official Vault Documents</h3>
+                <button
+                  onClick={() => setIsDocModalOpen(true)}
+                  className="px-3 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white font-bold rounded-lg text-xs cursor-pointer flex items-center gap-1 shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Upload Document</span>
+                </button>
+              </div>
+
+              {(!employee.documents || employee.documents.length === 0) ? (
+                <p className="text-xs text-slate-500 py-6 text-center">No documents uploaded for this employee yet.</p>
+              ) : (
+                <div className="space-y-3 text-xs">
+                  {employee.documents.map((d: any) => (
+                    <div key={d.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-[#0f365e]" />
+                        <div>
+                          <p className="font-bold text-slate-900">{d.title}</p>
+                          <p className="text-[10px] text-slate-500 capitalize">{d.type} • Uploaded {d.created_at ? String(d.created_at).slice(0, 10) : 'Recent'}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadDoc(d)}
+                        className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg font-bold text-slate-800 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                      >
+                        <Download className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Download</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: PERSONAL DETAILS */}
           {activeTab === 'personal' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4 text-xs">
-              <h3 className="text-base font-bold text-slate-900 pb-3 border-b border-slate-100">Personal Information</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-6">
+              <h3 className="text-base font-bold text-slate-900">Personal & Emergency Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[10px] font-bold uppercase">Phone</span>
-                  <span className="text-slate-900 font-mono font-bold">{employee.phone || 'N/A'}</span>
+                  <span className="text-slate-400 font-bold uppercase block mb-1">Phone Number</span>
+                  <p className="text-sm font-semibold text-slate-900">{employee.phone || 'Not Specified'}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] font-bold uppercase">Employment Status</span>
-                  <span className="text-slate-900 font-semibold capitalize">{employee.status}</span>
+                  <span className="text-slate-400 font-bold uppercase block mb-1">Work Mode</span>
+                  <p className="text-sm font-semibold text-slate-900 capitalize">{employee.work_mode || 'In-Office'}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] font-bold uppercase">Employee Code</span>
-                  <span className="text-slate-900 font-mono font-semibold">{employee.employee_code}</span>
+                  <span className="text-slate-400 font-bold uppercase block mb-1">Gender</span>
+                  <p className="text-sm font-semibold text-slate-900 capitalize">{employee.gender || 'Not Specified'}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold uppercase block mb-1">Date of Birth</span>
+                  <p className="text-sm font-semibold text-slate-900 font-mono">
+                    {employee.dob ? String(employee.dob).split('T')[0] : 'Not Specified'}
+                  </p>
                 </div>
               </div>
             </div>
           )}
-
-          {/* UPLOAD DOCUMENT MODAL */}
-          <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Upload Document">
-            <form onSubmit={handleDocUpload} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Document Title</label>
-                <input
-                  type="text"
-                  required
-                  value={docTitle}
-                  onChange={(e) => setDocTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900"
-                  placeholder="Employment Agreement 2026"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Category</label>
-                <select
-                  value={docType}
-                  onChange={(e) => setDocType(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900"
-                >
-                  <option value="contract">Employment Contract</option>
-                  <option value="id_proof">Government ID</option>
-                  <option value="tax">Tax Document</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsDocModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium border border-slate-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white rounded-lg font-bold shadow-xs"
-                >
-                  {uploading ? 'Saving...' : 'Save Document'}
-                </button>
-              </div>
-            </form>
-          </Modal>
-
-          <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
         </main>
       </div>
+
+      {/* UPLOAD DOCUMENT MODAL */}
+      <Modal isOpen={isDocModalOpen} onClose={() => setIsDocModalOpen(false)} title="Upload Document to Employee Vault">
+        <form onSubmit={handleDocUpload} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Select File to Upload *</label>
+            <input
+              type="file"
+              required
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedFile(file);
+                  if (!docTitle) {
+                    setDocTitle(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
+                  }
+                }
+              }}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Document Title *</label>
+            <input
+              type="text"
+              required
+              value={docTitle}
+              onChange={(e) => setDocTitle(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="e.g. Identity Card, Appointment Letter"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white capitalize"
+            >
+              <option value="contract">Contract & Agreement</option>
+              <option value="identity">Identity Proof</option>
+              <option value="tax">Tax Declaration</option>
+              <option value="certificate">Certification / Degree</option>
+              <option value="other">Other Document</option>
+            </select>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsDocModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={uploading || !selectedFile}
+              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {uploading ? 'Uploading...' : 'Save to Vault'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
     </div>
   );
 }
