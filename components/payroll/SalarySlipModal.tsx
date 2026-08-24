@@ -33,7 +33,78 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
   } = slipData;
 
   const handlePrint = () => {
-    window.print();
+    const printableElement = document.getElementById('salary-slip-printable');
+    if (!printableElement) return;
+
+    // Create an isolated hidden iframe so ONLY the salary slip is printed (0 unwanted background pages)
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Salary Slip - ${employee.name || 'Staff'} (${pay_period_month} ${pay_period_year})</title>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 8mm 10mm;
+            }
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            html, body {
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              color: #0f172a;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              font-size: 11px;
+              line-height: 1.35;
+            }
+            .slip-canvas {
+              width: 100%;
+              max-width: 100%;
+              margin: 0 auto;
+              padding: 4px;
+            }
+          </style>
+          <link rel="stylesheet" href="/globals.css" />
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-white">
+          <div class="slip-canvas">
+            ${printableElement.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    // Trigger print once iframe finishes rendering
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 1000);
+    }, 350);
   };
 
   // Pad table rows so earnings and deductions have equal rows
@@ -54,39 +125,8 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
       title={`Salary Slip #${id} — ${employee.name} (${pay_period_month} ${pay_period_year})`}
       maxWidth="4xl"
     >
-      {/* PRINT-SPECIFIC CSS RULES FOR EXACT SINGLE A4 PAGE WITH VIBRANT COLORS */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @page {
-            size: A4 portrait;
-            margin: 6mm 8mm;
-          }
-          @media print {
-            html, body {
-              background: #ffffff !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              color-adjust: exact !important;
-            }
-            aside, header, nav, .print\\:hidden {
-              display: none !important;
-            }
-            #salary-slip-printable {
-              box-shadow: none !important;
-              border: none !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              width: 100% !important;
-              max-width: 100% !important;
-              page-break-inside: avoid !important;
-              page-break-after: avoid !important;
-            }
-          }
-        `
-      }} />
-
       <div className="space-y-4">
-        {/* ACTION BAR (HIDDEN IN PRINT) */}
+        {/* ACTION BAR (SCREEN ONLY) */}
         <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 print:hidden">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-700">Pay Period:</span>
@@ -110,7 +150,7 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
               className="px-5 py-2 hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Print / Save as PDF (A4 1-Page)</span>
+              <span>Print / Save as PDF</span>
             </button>
           </div>
         </div>
