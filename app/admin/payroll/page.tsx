@@ -524,7 +524,12 @@ export default function AdminPayrollPage() {
       </div>
 
       {/* BULK GENERATION MODAL */}
-      <Modal isOpen={isBulkModalOpen} onClose={() => setIsBulkModalOpen(false)} title="Bulk Generate Payroll for All Active Staff">
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title="Bulk Generate Payroll for All Active Staff"
+        maxWidth="xl"
+      >
         <form onSubmit={handleBulkGenerate} className="space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed font-medium">
             This will calculate earnings and statutory deductions for all currently active staff for the selected pay period. Paid records will not be overwritten.
@@ -608,34 +613,59 @@ export default function AdminPayrollPage() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title={editingPayrollId ? 'Edit Payroll Line Items' : 'Create Single Employee Payroll'}
+        maxWidth="4xl"
       >
-        <form onSubmit={handleSavePayroll} className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
-          {/* Employee & Period selection */}
-          {!editingPayrollId && (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Select Employee <span className="text-rose-500">*</span></label>
+        <form onSubmit={handleSavePayroll} className="space-y-5">
+          {/* Employee Picker */}
+          {!editingPayrollId ? (
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <label className="block text-xs font-black text-[#081e3a] uppercase tracking-wider mb-1.5">
+                Select Employee <span className="text-rose-500">*</span>
+              </label>
               <select
                 value={formEmployeeId}
-                onChange={(e) => setFormEmployeeId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-bold"
+                onChange={(e) => {
+                  setFormEmployeeId(e.target.value);
+                  const emp = employeesList.find((em) => Number(em.id) === Number(e.target.value));
+                  if (emp) {
+                    const base = Number(emp.base_salary || 60000);
+                    setFormEarnings([
+                      { particulars: 'Basic Salary', amount: Number(base * 0.50).toFixed(2) },
+                      { particulars: 'Dearness Allowance (DA)', amount: Number(base * 0.10).toFixed(2) },
+                      { particulars: 'House Rent Allowance (HRA)', amount: Number(base * 0.20).toFixed(2) },
+                      { particulars: 'Conveyance Allowance', amount: Number(base * 0.05).toFixed(2) },
+                      { particulars: 'Special Allowance', amount: Number(base * 0.15).toFixed(2) },
+                      { particulars: 'Other Allowance', amount: '0.00' },
+                    ]);
+                    setFormDeductions([
+                      { particulars: 'Provident Fund (PF)', amount: '1800.00' },
+                      { particulars: 'Employee State Insurance (ESI)', amount: '0.00' },
+                      { particulars: 'Professional Tax (PT)', amount: '200.00' },
+                      { particulars: 'Income Tax (TDS)', amount: base > 80000 ? Number((base - 50000) * 0.10).toFixed(2) : '0.00' },
+                      { particulars: 'Other Deductions', amount: '0.00' },
+                    ]);
+                  }
+                }}
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs bg-white font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden cursor-pointer"
               >
                 {employeesList.map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.name} ({emp.employee_code || `EMP-${emp.id}`} • {emp.department || 'General'} — Base: ₹{Number(emp.base_salary || 50000).toLocaleString('en-IN')})
+                    {emp.name} ({emp.employee_code || `EMP-${emp.id}`} • {emp.department || 'General'} — Base CTC: ₹{Number(emp.base_salary || 50000).toLocaleString('en-IN')})
                   </option>
                 ))}
               </select>
             </div>
-          )}
+          ) : null}
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Period & Payment Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Month</label>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Pay Month</label>
               <select
                 disabled={!!editingPayrollId}
                 value={formMonth}
                 onChange={(e) => setFormMonth(e.target.value)}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 font-semibold"
               >
                 {MONTHS.map((m) => (
                   <option key={m} value={m}>{m}</option>
@@ -644,12 +674,12 @@ export default function AdminPayrollPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Year</label>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Pay Year</label>
               <select
                 disabled={!!editingPayrollId}
                 value={formYear}
                 onChange={(e) => setFormYear(Number(e.target.value))}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 font-semibold"
               >
                 {YEARS.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -658,46 +688,49 @@ export default function AdminPayrollPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Pay Date</label>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Pay Date <span className="text-rose-500">*</span></label>
               <input
                 type="date"
                 required
                 value={formPayDate}
                 onChange={(e) => setFormPayDate(e.target.value)}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Mode</label>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Disbursement Mode</label>
               <select
                 value={formPaymentMode}
                 onChange={(e) => setFormPaymentMode(e.target.value)}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 font-semibold"
               >
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="cheque">Cheque</option>
+                <option value="bank_transfer">Bank Transfer (NEFT/RTGS)</option>
+                <option value="cheque">Company Cheque</option>
                 <option value="cash">Cash</option>
               </select>
             </div>
           </div>
 
           {/* TWO COLUMNS: EARNINGS & DEDUCTIONS LINE ITEMS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* EARNINGS COLUMN */}
-            <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-extrabold text-[#081e3a] text-xs uppercase">Earnings Particulars</span>
+            <div className="border-2 border-emerald-200/80 rounded-xl overflow-hidden bg-white shadow-2xs flex flex-col">
+              <div className="bg-emerald-50 px-4 py-2.5 border-b border-emerald-200 flex items-center justify-between">
+                <div>
+                  <span className="font-black text-emerald-900 text-xs uppercase tracking-wider block">Earnings Particulars</span>
+                  <span className="text-[10px] text-emerald-700">Allowances & base compensation</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setFormEarnings([...formEarnings, { particulars: 'Allowance', amount: '0.00' }])}
-                  className="text-[10px] text-emerald-700 font-bold hover:underline"
+                  onClick={() => setFormEarnings([...formEarnings, { particulars: 'Special Allowance', amount: '0.00' }])}
+                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-2xs cursor-pointer"
                 >
                   + Add Earning
                 </button>
               </div>
 
-              <div className="space-y-2">
+              <div className="p-3 space-y-2 flex-1 max-h-60 overflow-y-auto">
                 {formEarnings.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <input
@@ -708,51 +741,59 @@ export default function AdminPayrollPage() {
                         updated[idx].particulars = e.target.value;
                         setFormEarnings(updated);
                       }}
-                      className="flex-1 px-2 py-1 bg-white border border-slate-300 rounded text-xs"
-                      placeholder="Particular"
+                      className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white"
+                      placeholder="e.g. Basic Salary"
                     />
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={item.amount}
-                      onChange={(e) => {
-                        const updated = [...formEarnings];
-                        updated[idx].amount = e.target.value;
-                        setFormEarnings(updated);
-                      }}
-                      className="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-xs text-right font-mono"
-                      placeholder="0.00"
-                    />
+                    <div className="relative w-32 shrink-0">
+                      <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">₹</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.amount}
+                        onChange={(e) => {
+                          const updated = [...formEarnings];
+                          updated[idx].amount = e.target.value;
+                          setFormEarnings(updated);
+                        }}
+                        className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-right font-mono font-bold focus:bg-white"
+                        placeholder="0.00"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setFormEarnings(formEarnings.filter((_, i) => i !== idx))}
-                      className="text-slate-400 hover:text-rose-600 p-0.5"
+                      className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      title="Remove line"
                     >
-                      ×
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between font-black text-xs text-[#081e3a]">
-                <span>Total Earnings (A):</span>
-                <span className="font-mono">₹ {liveTotalEarnings.toFixed(2)}</span>
+
+              <div className="bg-emerald-50/70 px-4 py-2.5 border-t border-emerald-200 flex items-center justify-between font-black text-xs text-emerald-950">
+                <span>TOTAL EARNINGS (A):</span>
+                <span className="font-mono text-sm">₹ {liveTotalEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
             {/* DEDUCTIONS COLUMN */}
-            <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-extrabold text-[#081e3a] text-xs uppercase">Deductions Particulars</span>
+            <div className="border-2 border-rose-200/80 rounded-xl overflow-hidden bg-white shadow-2xs flex flex-col">
+              <div className="bg-rose-50 px-4 py-2.5 border-b border-rose-200 flex items-center justify-between">
+                <div>
+                  <span className="font-black text-rose-900 text-xs uppercase tracking-wider block">Deductions Particulars</span>
+                  <span className="text-[10px] text-rose-700">Taxes, PF & statutory debits</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setFormDeductions([...formDeductions, { particulars: 'Deduction', amount: '0.00' }])}
-                  className="text-[10px] text-rose-700 font-bold hover:underline"
+                  onClick={() => setFormDeductions([...formDeductions, { particulars: 'Other Deduction', amount: '0.00' }])}
+                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] rounded-lg shadow-2xs cursor-pointer"
                 >
                   + Add Deduction
                 </button>
               </div>
 
-              <div className="space-y-2">
+              <div className="p-3 space-y-2 flex-1 max-h-60 overflow-y-auto">
                 {formDeductions.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <input
@@ -763,75 +804,95 @@ export default function AdminPayrollPage() {
                         updated[idx].particulars = e.target.value;
                         setFormDeductions(updated);
                       }}
-                      className="flex-1 px-2 py-1 bg-white border border-slate-300 rounded text-xs"
-                      placeholder="Particular"
+                      className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white"
+                      placeholder="e.g. Provident Fund"
                     />
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={item.amount}
-                      onChange={(e) => {
-                        const updated = [...formDeductions];
-                        updated[idx].amount = e.target.value;
-                        setFormDeductions(updated);
-                      }}
-                      className="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-xs text-right font-mono"
-                      placeholder="0.00"
-                    />
+                    <div className="relative w-32 shrink-0">
+                      <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">₹</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.amount}
+                        onChange={(e) => {
+                          const updated = [...formDeductions];
+                          updated[idx].amount = e.target.value;
+                          setFormDeductions(updated);
+                        }}
+                        className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-right font-mono font-bold focus:bg-white text-rose-600"
+                        placeholder="0.00"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setFormDeductions(formDeductions.filter((_, i) => i !== idx))}
-                      className="text-slate-400 hover:text-rose-600 p-0.5"
+                      className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      title="Remove line"
                     >
-                      ×
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-200 flex justify-between font-black text-xs text-rose-700">
-                <span>Total Deductions (B):</span>
-                <span className="font-mono">₹ {liveTotalDeductions.toFixed(2)}</span>
+
+              <div className="bg-rose-50/70 px-4 py-2.5 border-t border-rose-200 flex items-center justify-between font-black text-xs text-rose-950">
+                <span>TOTAL DEDUCTIONS (B):</span>
+                <span className="font-mono text-sm text-rose-700">₹ {liveTotalDeductions.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
 
-          {/* NET SALARY LIVE PREVIEW BOX */}
-          <div className="p-3 bg-[#081e3a] text-white rounded-xl flex items-center justify-between shadow-xs">
-            <div>
-              <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider block">
-                Calculated Net Salary (A − B)
-              </span>
-              <p className="text-xl font-black font-mono mt-0.5">
-                ₹ {liveNetSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          {/* NET SALARY LIVE PREVIEW BANNER */}
+          <div className="p-4 bg-gradient-to-r from-[#081e3a] to-[#163660] text-white rounded-xl flex items-center justify-between shadow-sm border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xl shadow-xs">
+                ₹
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider block">
+                  Calculated Net Disbursed Salary (A − B)
+                </span>
+                <p className="text-2xl font-black font-mono tracking-tight text-white mt-0.5">
+                  ₹ {liveNetSalary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right max-w-sm hidden sm:block">
+              <span className="text-[9px] text-amber-300 font-black uppercase tracking-wider block">Amount Status</span>
+              <p className="text-xs text-slate-200 italic font-semibold mt-0.5">
+                Ready for disbursement calculation
               </p>
             </div>
           </div>
 
+          {/* Notes */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Administrative Notes</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Administrative Notes (Optional)</label>
             <input
               type="text"
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}
-              placeholder="e.g. Performance incentive added..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="e.g. Approved with performance bonus..."
+              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white"
             />
           </div>
 
-          <div className="pt-4 border-t border-slate-200 flex justify-end gap-2">
+          {/* Action Buttons */}
+          <div className="pt-4 border-t border-slate-200 flex justify-end items-center gap-3">
             <button
               type="button"
               onClick={() => setIsEditModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={savingPayroll}
-              className="px-5 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
+              className="px-6 py-2.5 bg-[#081e3a] hover:bg-[#10305a] active:scale-95 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer transition-all flex items-center gap-2"
             >
-              {savingPayroll ? 'Saving...' : 'Save & Calculate Payroll'}
+              <CheckCircle className="w-4 h-4" />
+              <span>{savingPayroll ? 'Saving...' : 'Save & Calculate Payroll'}</span>
             </button>
           </div>
         </form>

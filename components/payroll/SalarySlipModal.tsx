@@ -48,7 +48,12 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Salary Slip #${id} — ${employee.name} (${pay_period_month} ${pay_period_year})`}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Salary Slip #${id} — ${employee.name} (${pay_period_month} ${pay_period_year})`}
+      maxWidth="4xl"
+    >
       <div className="space-y-4">
         {/* ACTION BAR */}
         <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 print:hidden">
