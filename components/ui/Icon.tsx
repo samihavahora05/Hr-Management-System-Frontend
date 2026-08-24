@@ -407,3 +407,18 @@ export const Bot = (props: IconProps) => (
     <path d="M9 13h.01M15 13h.01M12 2v4M2 12h1M21 12h1" />
   </svg>
 );
+
+export const Printer = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <polyline points="6 9 6 2 18 2 18 9" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+    <rect width="12" height="8" x="6" y="14" />
+  </svg>
+);
+
+export const CheckCircle = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);

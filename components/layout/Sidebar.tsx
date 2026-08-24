@@ -71,8 +71,10 @@ export function Sidebar() {
     admin: [
       { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
       { label: 'AI Assistant', href: '/admin/assistant', icon: Sparkles },
+      { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Users & Master', href: '/admin/users', icon: Users },
       { label: 'Departments', href: '/admin/departments', icon: Building2 },
+      { label: 'Payroll & Slips', href: '/admin/payroll', icon: CreditCard },
       { label: 'Tasks', href: '/admin/tasks', icon: ListTodo },
       { label: 'Performance', href: '/admin/performance', icon: TrendingUp },
       { label: 'Attendance', href: '/admin/attendance', icon: Clock },
@@ -82,7 +84,7 @@ export function Sidebar() {
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Assets', href: '/assets', icon: Building2 },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
-      { label: 'Notifications', href: '/notifications', icon: Megaphone },
+
       { label: 'Roles', href: '/admin/roles', icon: ShieldCheck },
       { label: 'Permissions', href: '/admin/permissions', icon: CheckSquare },
       { label: 'Organization', href: '/admin/organization', icon: Building2 },
@@ -130,6 +132,7 @@ export function Sidebar() {
     employee: [
       { label: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard },
       { label: 'AI Assistant', href: '/employee/assistant', icon: Sparkles },
+      { label: 'My Payslips', href: '/employee/payroll', icon: CreditCard },
       { label: 'My Tasks', href: '/employee/tasks', icon: ListTodo },
       { label: 'Attendance', href: '/employee/attendance', icon: Clock },
       { label: 'Leave', href: '/employee/leave', icon: CalendarDays },
@@ -175,9 +178,8 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`bg-white border-r border-[#c3c6cf] text-slate-700 flex flex-col h-screen sticky top-0 shrink-0 z-20 transition-all duration-200 ease-in-out ${
-        isCollapsed ? 'w-16' : 'w-64'
-      }`}
+      className={`bg-white border-r border-[#c3c6cf] text-slate-700 flex flex-col h-screen sticky top-0 shrink-0 z-20 transition-all duration-200 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
+        }`}
     >
       {/* BRAND & PORTAL HEADER */}
       <div className="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -232,11 +234,10 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               title={isCollapsed ? (hasUnread ? `${item.label} (${unreadCount} unread)` : item.label) : undefined}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 group relative ${
-                isActive
+              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 group relative ${isActive
                   ? 'bg-slate-100 text-[#0f365e] font-bold border border-[#c3c6cf] shadow-2xs'
                   : 'text-slate-600 hover:text-[#0f365e] hover:bg-slate-50'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative shrink-0">
