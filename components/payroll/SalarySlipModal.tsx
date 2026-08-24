@@ -95,9 +95,12 @@ export function SalarySlipModal({ isOpen, onClose, slipData }: SalarySlipModalPr
               </div>
               <div>
                 <h1 className="font-black text-2xl tracking-tight text-[#081e3a] uppercase leading-none">
-                  {company.name || 'BLUEBOXX DA PVT. LTD.'}
+                  {company.brand_title || 'BLUEBOXX DA'}
                 </h1>
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-1.5">
+                <p className="font-black text-xs text-[#081e3a] tracking-wider uppercase mt-1">
+                  {company.brand_subtitle || 'PVT. LTD.'}
+                </p>
+                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-1">
                   {company.tagline || 'LEARNING TODAY, LEADING TOMORROW'}
                 </p>
               </div>
