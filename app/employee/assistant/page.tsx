@@ -9,7 +9,7 @@ export default function EmployeeAssistantPage() {
   return (
     <PortalLayout namespace="employee">
       <PageHeader
-        title="Personal HR Assistant"
+        title="Personal Admin Assistant"
         description="Query your leave quotas, today's attendance status, department details, and company policies"
       />
       <AssistantChat portalScope="employee" />
