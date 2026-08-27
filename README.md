@@ -138,6 +138,6 @@ frontend/
 
 ---
 
-## 📄 License
+## 📄 License & Copyright
 
-This project is licensed under the **MIT License**.
+This project is licensed under the **MIT License** — Copyright © 2026 **Samiha Vahora** & **BlueBoxx**. All rights reserved. See the [LICENSE](LICENSE) file for more details.
