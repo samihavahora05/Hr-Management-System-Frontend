@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
 import { fetchApi } from '@/lib/api';
 import { exportToCSV } from '@/lib/export';
-import { UserPlus, Download, Trash2, ShieldCheck, Eye, EyeOff } from '@/components/ui/Icon';
+import { UserPlus, Download, Trash2, ShieldCheck, Eye, EyeOff, Edit, CheckSquare } from '@/components/ui/Icon';
 
 const DEFAULT_COMPANY_DEPARTMENTS = [
   'Engineering',
@@ -48,6 +48,24 @@ export default function AdminUsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Edit User modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editShowPassword, setEditShowPassword] = useState(false);
+  const [editRole, setEditRole] = useState('employee');
+  const [editDepartment, setEditDepartment] = useState('Engineering');
+  const [editDesignation, setEditDesignation] = useState('Software Developer');
+  const [editJoiningDate, setEditJoiningDate] = useState('');
+  const [editBaseSalary, setEditBaseSalary] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editManagerId, setEditManagerId] = useState<string | number>('');
+  const [editShiftId, setEditShiftId] = useState<string | number>('');
+  const [editStatus, setEditStatus] = useState('active');
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Shift timing customizer modal state
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
@@ -163,6 +181,58 @@ export default function AdminUsersPage() {
     }
   };
 
+  const openEditModal = (u: any) => {
+    setEditingUserId(u.id);
+    setEditName(u.name || '');
+    setEditEmail(u.email || '');
+    setEditPassword('');
+    setEditShowPassword(false);
+    setEditRole(u.role?.name || 'employee');
+    setEditDepartment(u.department || 'Engineering');
+    setEditDesignation(u.designation || 'Staff');
+    setEditJoiningDate(u.joining_date ? String(u.joining_date).slice(0, 10) : '2026-08-19');
+    setEditBaseSalary(u.base_salary ? String(u.base_salary) : '75000');
+    setEditPhone(u.phone || '');
+    setEditManagerId(u.manager_id || '');
+    setEditShiftId(u.shift_id || (shiftsList[0]?.id ?? ''));
+    setEditStatus(u.status || 'active');
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUserId) return;
+    setEditSubmitting(true);
+    try {
+      await fetchApi(`/employees/${editingUserId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: editName,
+          email: editEmail,
+          password: editPassword || undefined,
+          role: editRole,
+          department: editDepartment,
+          designation: editDesignation,
+          joining_date: editJoiningDate,
+          base_salary: editBaseSalary,
+          phone: editPhone,
+          manager_id: editManagerId ? Number(editManagerId) : null,
+          shift_id: editShiftId ? Number(editShiftId) : null,
+          status: editStatus,
+        }),
+      });
+
+      setToastMessage(`User account for "${editName}" updated successfully!`);
+      setIsEditModalOpen(false);
+      setEditingUserId(null);
+      await loadUsers();
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to update user account');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const handleDeleteUser = async (userObj: any) => {
     if (userObj.role?.name === 'admin' || userObj.email === 'admin@blueboxx.com') {
       setToastMessage('The Primary Admin account is permanent and cannot be removed.');
@@ -261,27 +331,35 @@ export default function AdminUsersPage() {
                 <Badge key="status" variant={u.status === 'active' ? 'green' : 'red'}>
                   {u.status}
                 </Badge>,
-                isAdmin ? (
-                  <span
-                    key="protected"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold select-none"
-                    title="Permanent Master Admin Account"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Permanent</span>
-                  </span>
-                ) : (
+                <div key={u.id + '-actions'} className="flex items-center gap-1.5">
                   <button
-                    key="delete"
-                    onClick={() => handleDeleteUser(u)}
-                    disabled={deletingId === u.id}
-                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                    title="Remove user account from database"
+                    onClick={() => openEditModal(u)}
+                    className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 hover:text-sky-900 border border-sky-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    title="Edit user details"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove</span>
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit</span>
                   </button>
-                ),
+                  {isAdmin ? (
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold select-none"
+                      title="Permanent Master Admin Account"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Permanent</span>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleDeleteUser(u)}
+                      disabled={deletingId === u.id}
+                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      title="Remove user account from database"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
               ];
             })}
           />
@@ -450,6 +528,192 @@ export default function AdminUsersPage() {
               className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {submitting ? 'Creating User...' : 'Create Account'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* EDIT USER MODAL */}
+      <Modal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setEditShowPassword(false); }} title="Edit User Account Details">
+        <form onSubmit={handleUpdateUser} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
+            <input
+              type="text"
+              required
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="e.g. Vikram Singh"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
+              <input
+                type="email"
+                required
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                placeholder="user@blueboxx.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Reset Password (Optional)</label>
+              <div className="relative">
+                <input
+                  type={editShowPassword ? 'text' : 'password'}
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-lg text-xs"
+                  placeholder="Leave blank to keep current password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditShowPassword(!editShowPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer select-none"
+                  title={editShowPassword ? 'Hide password' : 'Show password'}
+                >
+                  {editShowPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Role</label>
+              <select
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 bg-white"
+              >
+                <option value="employee">Employee</option>
+                <option value="team_leader">Team Leader</option>
+                <option value="manager">Company Manager</option>
+                <option value="hr">HR Specialist</option>
+                <option value="admin">Master Administrator</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Department</label>
+              <select
+                value={editDepartment}
+                onChange={(e) => setEditDepartment(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
+              >
+                {companyDepartments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Designation</label>
+              <input
+                type="text"
+                required
+                value={editDesignation}
+                onChange={(e) => setEditDesignation(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Account Status</label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-bold capitalize"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="on_leave">On Leave</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Reporting Manager</label>
+              <select
+                value={editManagerId}
+                onChange={(e) => setEditManagerId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white"
+              >
+                <option value="">None (Top-Level / Admin Direct)</option>
+                {managersList
+                  .filter((m) => m.id !== editingUserId)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.role?.display_name || m.role?.name})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Work Shift Timing</label>
+              <select
+                value={editShiftId}
+                onChange={(e) => setEditShiftId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-medium text-slate-700"
+              >
+                {shiftsList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Joining Date</label>
+              <input
+                type="date"
+                value={editJoiningDate}
+                onChange={(e) => setEditJoiningDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+              <input
+                type="text"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                placeholder="+91 98765 43210"
+              />
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={editSubmitting}
+              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+            >
+              <CheckSquare className="w-4 h-4" />
+              <span>{editSubmitting ? 'Saving Changes...' : 'Save User Changes'}</span>
             </button>
           </div>
         </form>
