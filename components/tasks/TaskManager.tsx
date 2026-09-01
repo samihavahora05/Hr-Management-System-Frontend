@@ -792,25 +792,44 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         )}
                       </td>
 
-                      {/* PROMINENT SUBMIT COMPLETED BUTTON (ONLY FOR ASSIGNEE) */}
+                      {/* PROMINENT SUBMIT COMPLETED BUTTON & DELETE ACTION */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {task.status === 'completed' ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Done
-                          </span>
-                        ) : isTaskAssignee(task) ? (
-                          <button
-                            onClick={() => handleStatusChange(task.id, 'completed')}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition-all flex items-center gap-1.5 mx-auto cursor-pointer"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Mark Completed</span>
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 font-medium italic" title="Assignee updates task status">
-                            View status only
-                          </span>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {task.status === 'completed' ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Done
+                            </span>
+                          ) : isTaskAssignee(task) ? (
+                            <button
+                              onClick={() => {
+                                const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
+                                if (hasIncompleteSubtasks) {
+                                  setToastMessage('Please complete all checklist subtasks first.');
+                                  return;
+                                }
+                                handleStatusChange(task.id, 'completed');
+                              }}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Mark Completed</span>
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 font-medium italic" title="Assignee updates task status">
+                              View status only
+                            </span>
+                          )}
+
+                          {(isAdminMode || !isEmployeeMode || task.assigner_id === user?.id) && (
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                              title="Delete task from system"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1269,10 +1288,11 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
             {/* FOOTER ACTIONS */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              {(selectedTask.assigner_id === user?.id || !isEmployeeMode) ? (
+              {(isAdminMode || !isEmployeeMode || selectedTask.assigner_id === user?.id) ? (
                 <button
                   onClick={() => handleDeleteTask(selectedTask.id)}
-                  className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Delete task from organization database"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Delete Task</span>
