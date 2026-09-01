@@ -48,7 +48,7 @@ export default function TeamLeaderProfilePage() {
 
           <div>
             <span className="text-slate-400 font-bold uppercase block mb-1">Manager</span>
-            <span className="font-bold text-slate-900">{user?.manager_name || 'Rajesh Kumar (Company Manager)'}</span>
+            <span className="font-bold text-slate-900">{user?.manager_name || 'Assigned Manager'}</span>
           </div>
         </div>
       </div>

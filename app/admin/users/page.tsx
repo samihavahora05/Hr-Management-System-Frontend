@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
 import { fetchApi } from '@/lib/api';
 import { exportToCSV } from '@/lib/export';
-import { UserPlus, Download, Trash2 } from '@/components/ui/Icon';
+import { UserPlus, Download, Trash2, ShieldCheck, Eye, EyeOff } from '@/components/ui/Icon';
 
 const DEFAULT_COMPANY_DEPARTMENTS = [
   'Engineering',
@@ -35,6 +35,8 @@ export default function AdminUsersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState('employee');
   const [department, setDepartment] = useState('Engineering');
   const [designation, setDesignation] = useState('Software Developer');
@@ -133,6 +135,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({
           name,
           email,
+          password: password || undefined,
           role,
           department,
           designation,
@@ -144,10 +147,12 @@ export default function AdminUsersPage() {
         }),
       });
 
-      setToastMessage(`New ${role} user created and assigned shift timing! Default password: password123`);
+      setToastMessage(`New ${role} user account created successfully with assigned credentials!`);
       setIsAddModalOpen(false);
       setName('');
       setEmail('');
+      setPassword('');
+      setShowPassword(false);
       setPhone('');
       setManagerId('');
       await loadUsers();
@@ -159,6 +164,11 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userObj: any) => {
+    if (userObj.role?.name === 'admin' || userObj.email === 'admin@blueboxx.com') {
+      setToastMessage('The Primary Admin account is permanent and cannot be removed.');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to remove user "${userObj.name}"? This action will permanently remove the user from the database.`)) {
       return;
     }
@@ -183,40 +193,38 @@ export default function AdminUsersPage() {
       return;
     }
     const headers = ['Name', 'Code', 'Email', 'Role', 'Department', 'Designation', 'Joining Date', 'Status', 'Phone'];
-    const rows = users.map((u) => [
+    const data = users.map((u) => [
       u.name,
-      u.employee_code || `EMP00${u.id}`,
+      u.employee_code || '',
       u.email,
       u.role?.display_name || u.role?.name || 'Employee',
       u.department || 'N/A',
       u.designation || 'Staff',
-      u.joining_date ? String(u.joining_date).split('T')[0].split(' ')[0] : 'N/A',
+      u.joining_date || '',
       u.status || 'active',
-      u.phone || 'N/A',
+      u.phone || '',
     ]);
-    exportToCSV('Admin_System_Users', headers, rows);
-    setToastMessage('System user accounts exported to Excel CSV format successfully!');
+    exportToCSV('blueboxx_user_directory', headers, data);
+    setToastMessage('User directory exported successfully!');
   };
 
   return (
     <PortalLayout namespace="admin">
       <PageHeader
         title="User Account Management"
-        description="Create, assign roles, manage reporting structure, and remove user accounts from system database"
+        description="Create, assign roles, manage reporting structure, and configure user accounts in system database"
         action={
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportExcel}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
-              title="Export user accounts to Excel CSV"
+              className="py-2 px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Export to Excel</span>
             </button>
-
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+              className="py-2 px-3.5 bg-[#0f365e] hover:bg-[#164677] text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               <span>Add New User</span>
@@ -225,10 +233,10 @@ export default function AdminUsersPage() {
         }
       />
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white border border-[#c3c6cf] rounded-2xl p-5 shadow-xs">
         {loading ? (
-          <div className="p-8 text-center text-xs text-slate-400 font-medium animate-pulse">
-            Fetching system user accounts from database...
+          <div className="p-8 text-center text-xs text-slate-500 font-medium">
+            Loading user accounts from organization directory...
           </div>
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 font-medium">
@@ -237,37 +245,51 @@ export default function AdminUsersPage() {
         ) : (
           <TablePrimitive
             headers={['User', 'Email', 'Role', 'Department', 'Manager', 'Status', 'Action']}
-            rows={users.map((u) => [
-              <div key={u.id}>
-                <div className="font-bold text-slate-900">{u.name}</div>
-                <div className="text-[10px] font-mono text-slate-400">{u.employee_code || ''} • {u.designation || 'Staff'}</div>
-              </div>,
-              <span key="email" className="font-mono text-xs text-slate-600">{u.email}</span>,
-              <Badge key="role" variant={u.role?.name === 'admin' ? 'purple' : u.role?.name === 'hr' ? 'blue' : u.role?.name === 'manager' ? 'yellow' : u.role?.name === 'team_leader' ? 'sky' : 'gray'}>
-                {u.role?.display_name || u.role?.name || 'Employee'}
-              </Badge>,
-              u.department || 'N/A',
-              u.manager?.name || 'Top-Level Admin',
-              <Badge key="status" variant={u.status === 'active' ? 'green' : 'red'}>
-                {u.status}
-              </Badge>,
-              <button
-                key="delete"
-                onClick={() => handleDeleteUser(u)}
-                disabled={deletingId === u.id}
-                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                title="Remove user account from database"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Remove</span>
-              </button>,
-            ])}
+            rows={users.map((u) => {
+              const isAdmin = u.role?.name === 'admin' || u.email === 'admin@blueboxx.com';
+              return [
+                <div key={u.id}>
+                  <div className="font-bold text-slate-900">{u.name}</div>
+                  <div className="text-[10px] font-mono text-slate-400">{u.employee_code || ''} • {u.designation || 'Staff'}</div>
+                </div>,
+                <span key="email" className="font-mono text-xs text-slate-600">{u.email}</span>,
+                <Badge key="role" variant={u.role?.name === 'admin' ? 'purple' : u.role?.name === 'hr' ? 'blue' : u.role?.name === 'manager' ? 'yellow' : u.role?.name === 'team_leader' ? 'sky' : 'gray'}>
+                  {u.role?.display_name || u.role?.name || 'Employee'}
+                </Badge>,
+                u.department || 'N/A',
+                u.manager?.name || 'Top-Level Admin',
+                <Badge key="status" variant={u.status === 'active' ? 'green' : 'red'}>
+                  {u.status}
+                </Badge>,
+                isAdmin ? (
+                  <span
+                    key="protected"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold select-none"
+                    title="Permanent Master Admin Account"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Permanent</span>
+                  </span>
+                ) : (
+                  <button
+                    key="delete"
+                    onClick={() => handleDeleteUser(u)}
+                    disabled={deletingId === u.id}
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    title="Remove user account from database"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove</span>
+                  </button>
+                ),
+              ];
+            })}
           />
         )}
       </div>
 
       {/* ADD USER MODAL */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Create New User Account (Stores in DB)">
+      <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setShowPassword(false); }} title="Create New User Account (Stores in DB)">
         <form onSubmit={handleAddUser} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
@@ -281,16 +303,40 @@ export default function AdminUsersPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-              placeholder="user@blueboxx.com"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                placeholder="user@blueboxx.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Account Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-lg text-xs"
+                  placeholder="Assign password (min 6 chars)"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer select-none"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
