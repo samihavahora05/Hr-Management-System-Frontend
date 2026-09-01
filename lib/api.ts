@@ -1,4 +1,22 @@
-const PRIMARY_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+function normalizeApiBase(base: string) {
+  let cleaned = (base || '').trim().replace(/\/+$/, '');
+  if (!cleaned) return 'http://127.0.0.1:8000/api';
+  if (!cleaned.endsWith('/api')) {
+    cleaned += '/api';
+  }
+  return cleaned;
+}
+
+function buildApiUrl(base: string, endpoint: string) {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (cleanEndpoint.startsWith('/api/')) {
+    const rootBase = base.replace(/\/api$/, '');
+    return `${rootBase}${cleanEndpoint}`;
+  }
+  return `${base}${cleanEndpoint}`;
+}
+
+const PRIMARY_API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api');
 const FALLBACK_API_BASE = 'http://localhost:8000/api';
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -19,15 +37,18 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const primaryUrl = buildApiUrl(PRIMARY_API_BASE, endpoint);
+  const fallbackUrl = buildApiUrl(FALLBACK_API_BASE, endpoint);
+
   let res: Response;
   try {
-    res = await fetch(`${PRIMARY_API_BASE}${endpoint}`, {
+    res = await fetch(primaryUrl, {
       ...options,
       headers,
     });
   } catch (err) {
-    // If primary (127.0.0.1) fails, try fallback (localhost)
-    res = await fetch(`${FALLBACK_API_BASE}${endpoint}`, {
+    // If primary fails, try fallback
+    res = await fetch(fallbackUrl, {
       ...options,
       headers,
     });
@@ -55,11 +76,14 @@ export async function downloadApiFile(endpoint: string, fallbackFilename = 'docu
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const primaryUrl = buildApiUrl(PRIMARY_API_BASE, endpoint);
+  const fallbackUrl = buildApiUrl(FALLBACK_API_BASE, endpoint);
+
   let res: Response;
   try {
-    res = await fetch(`${PRIMARY_API_BASE}${endpoint}`, { headers });
+    res = await fetch(primaryUrl, { headers });
   } catch (err) {
-    res = await fetch(`${FALLBACK_API_BASE}${endpoint}`, { headers });
+    res = await fetch(fallbackUrl, { headers });
   }
 
   if (!res.ok) {
