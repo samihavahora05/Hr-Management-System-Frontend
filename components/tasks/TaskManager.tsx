@@ -753,7 +753,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                       {/* STATUS DISPLAY (EDITABLE ONLY BY ASSIGNEE) */}
                       <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         {isTaskAssignee(task) ? (() => {
-                          const curr = (task.status as any) === 'pending' ? 'todo' : task.status;
+                          const curr = ((task.status as any) === 'pending' ? 'todo' : task.status) as string;
                           const isTodo = curr === 'todo';
                           const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
                           const isCompleted = curr === 'completed' || curr === 'cancelled';
@@ -1124,7 +1124,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-600">Status:</span>
                 {isTaskAssignee(selectedTask) ? (() => {
-                  const curr = (selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status;
+                  const curr = ((selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status) as string;
                   const isTodo = curr === 'todo';
                   const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
                   const isCompleted = curr === 'completed' || curr === 'cancelled';
