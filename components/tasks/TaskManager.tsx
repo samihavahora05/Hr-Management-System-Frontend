@@ -752,20 +752,35 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
                       {/* STATUS DISPLAY (EDITABLE ONLY BY ASSIGNEE) */}
                       <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {isTaskAssignee(task) ? (
-                          <select
-                            value={(task.status as any) === 'pending' ? 'todo' : task.status}
-                            onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
-                              task.status
-                            )}`}
-                          >
-                            <option value="todo">To Do</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        ) : (
+                        {isTaskAssignee(task) ? (() => {
+                          const curr = (task.status as any) === 'pending' ? 'todo' : task.status;
+                          const isTodo = curr === 'todo';
+                          const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
+                          const isCompleted = curr === 'completed' || curr === 'cancelled';
+                          const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
+
+                          return (
+                            <select
+                              value={curr}
+                              onChange={(e) => {
+                                const target = e.target.value;
+                                if (target === 'completed' && hasIncompleteSubtasks) {
+                                  setToastMessage('Please complete all checklist subtasks first.');
+                                  return;
+                                }
+                                handleStatusChange(task.id, target);
+                              }}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
+                                task.status
+                              )}`}
+                            >
+                              <option value="todo" disabled={!isTodo && !isAdminMode}>To Do</option>
+                              <option value="in_progress" disabled={isCompleted && !isAdminMode}>In Progress</option>
+                              <option value="completed">Completed</option>
+                              <option value="cancelled" disabled={isCompleted && !isAdminMode}>Cancelled</option>
+                            </select>
+                          );
+                        })() : (
                           <span
                             title="Status view only (Assignee updates status)"
                             className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize ${getStatusBadge(
@@ -1108,20 +1123,35 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-600">Status:</span>
-                {isTaskAssignee(selectedTask) ? (
-                  <select
-                    value={(selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status}
-                    onChange={(e) => handleStatusChange(selectedTask.id, e.target.value)}
-                    className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
-                      selectedTask.status
-                    )}`}
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                ) : (
+                {isTaskAssignee(selectedTask) ? (() => {
+                  const curr = (selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status;
+                  const isTodo = curr === 'todo';
+                  const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
+                  const isCompleted = curr === 'completed' || curr === 'cancelled';
+                  const hasIncompleteSubtasks = selectedTask.subtasks && selectedTask.subtasks.length > 0 && selectedTask.subtasks.some((s) => !s.completed);
+
+                  return (
+                    <select
+                      value={curr}
+                      onChange={(e) => {
+                        const target = e.target.value;
+                        if (target === 'completed' && hasIncompleteSubtasks) {
+                          setToastMessage('Please complete all checklist subtasks first.');
+                          return;
+                        }
+                        handleStatusChange(selectedTask.id, target);
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
+                        selectedTask.status
+                      )}`}
+                    >
+                      <option value="todo" disabled={!isTodo && !isAdminMode}>To Do</option>
+                      <option value="in_progress" disabled={isCompleted && !isAdminMode}>In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled" disabled={isCompleted && !isAdminMode}>Cancelled</option>
+                    </select>
+                  );
+                })() : (
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize ${getStatusBadge(
                       selectedTask.status
