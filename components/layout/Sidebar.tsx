@@ -73,6 +73,7 @@ export function Sidebar() {
       { label: 'AI Assistant', href: '/admin/assistant', icon: Sparkles },
       { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Users & Master', href: '/admin/users', icon: Users },
+      { label: 'Document Vault', href: '/admin/documents', icon: FileText },
       { label: 'Departments', href: '/admin/departments', icon: Building2 },
       { label: 'Payroll & Slips', href: '/admin/payroll', icon: CreditCard },
       { label: 'Tasks', href: '/admin/tasks', icon: ListTodo },
@@ -96,6 +97,7 @@ export function Sidebar() {
       { label: 'HR Assistant', href: '/hr/assistant', icon: Sparkles },
       { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'Employees', href: '/hr/employees', icon: Users },
+      { label: 'Document Vault', href: '/hr/documents', icon: FileText },
       { label: 'Recruitment & ATS', href: '/hr/recruitment', icon: UserCheck },
       { label: 'Tasks', href: '/hr/tasks', icon: ListTodo },
       { label: 'Attendance', href: '/hr/attendance', icon: Clock },
@@ -114,6 +116,7 @@ export function Sidebar() {
       { label: 'Team Leaders', href: '/manager/team', icon: Users },
       { label: 'Employees', href: '/manager/employees', icon: UserCheck },
       { label: 'Team Tasks', href: '/manager/tasks', icon: ListTodo },
+      { label: 'Vault & Reports', href: '/manager/documents', icon: FileText },
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Expenses', href: '/expenses', icon: CreditCard },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
@@ -125,6 +128,7 @@ export function Sidebar() {
       { label: 'Notifications', href: '/notifications', icon: Megaphone },
       { label: 'My Team', href: '/team-leader/team', icon: Users },
       { label: 'Tasks', href: '/team-leader/tasks', icon: ListTodo },
+      { label: 'Vault & Reports', href: '/team-leader/documents', icon: FileText },
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
       { label: 'Profile', href: '/team-leader/profile', icon: User },
@@ -182,26 +186,34 @@ export function Sidebar() {
         }`}
     >
       {/* BRAND & PORTAL HEADER */}
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-[#0f365e] text-white font-extrabold text-lg flex items-center justify-center shrink-0 shadow-xs">
-            C
-          </div>
-          {!isCollapsed && (
-            <div className="min-w-0">
-              <h1 className="font-extrabold text-[#0f365e] text-lg tracking-tight leading-none">
-                CorpHR
-              </h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
+      <div className={`p-4 border-b border-slate-100 flex items-center ${isCollapsed ? 'justify-center flex-col gap-2' : 'justify-between'}`}>
+        <Link
+          href={`/${activeNamespace}/dashboard`}
+          className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+        >
+          {isCollapsed ? (
+            <img
+              src="/images/Boxxlogo.png"
+              alt="BlueBoxx"
+              className="w-8 h-8 object-contain shrink-0"
+            />
+          ) : (
+            <div className="flex flex-col min-w-0">
+              <img
+                src="/images/logoblue.png"
+                alt="BlueBoxx DA Pvt. Ltd."
+                className="h-7 w-auto object-contain object-left"
+              />
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1.5 truncate">
                 {portalTitleMap[activeNamespace]}
               </p>
             </div>
           )}
-        </div>
+        </Link>
 
         <button
           onClick={toggleSidebarCollapse}
-          className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="p-1.5 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`} />

@@ -240,7 +240,7 @@ export default function EmployeeAttendancePage() {
                 {schedule?.shift_name || 'General Day Shift'}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                {formatTime(schedule?.start_time || '09:00:00')} - {formatTime(schedule?.end_time || '18:00:00')}
+                {formatTime(schedule?.start_time || '10:00:00')} - {formatTime(schedule?.end_time || '18:00:00')}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">

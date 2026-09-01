@@ -9,7 +9,7 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Building2,
+  ShieldCheck,
 } from '@/components/ui/Icon';
 import { Toast } from '@/components/ui/Toast';
 
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export default function LoginPage() {
     try {
       const data = await fetchApi('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       login(data.token, data.user);
@@ -46,74 +46,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-white text-slate-900 font-sans">
-      {/* LEFT HERO IMAGE PANEL (7/12 to 8/12 COLUMNS) */}
-      <div className="relative hidden lg:flex lg:col-span-7 xl:col-span-8 flex-col justify-between p-10 xl:p-14 overflow-hidden bg-slate-950">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
-          style={{ backgroundImage: `url('/images/office_bg.jpg')` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-slate-950/30" />
-
-        {/* Top Branding Pill */}
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold tracking-wide uppercase shadow-xs">
-            <Building2 className="w-3.5 h-3.5 text-sky-400" />
-            <span>BlueBoxx HRMS Enterprise</span>
-          </div>
+    <div className="min-h-screen bg-[#f9f9ff] text-slate-900 font-sans flex flex-col justify-between p-4 sm:p-6 lg:p-8">
+      {/* Top Header / Branding */}
+      <header className="w-full max-w-md mx-auto flex items-center justify-between pt-2 sm:pt-4">
+        <div className="flex items-center gap-2">
+          <img
+            src="/images/logoblue.png"
+            alt="BlueBoxx DA Pvt. Ltd."
+            className="h-8 sm:h-9 w-auto object-contain"
+          />
         </div>
+        <span className="text-[11px] font-medium text-slate-400">v4.2 Enterprise</span>
+      </header>
 
-        {/* Bottom Hero Typography */}
-        <div className="relative z-10 space-y-4 max-w-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white text-slate-950 font-display font-bold text-base flex items-center justify-center shadow-md">
-              BB
-            </div>
-            <span className="font-display text-lg font-semibold tracking-tight text-white">
-              Corp<span className="italic font-normal text-slate-300">HR</span>
-            </span>
-          </div>
-
-          <h2 className="font-display text-4xl xl:text-[2.75rem] font-medium italic text-white leading-[1.1] tracking-tight">
-            Human Capital,
-            <br />
-            <span className="not-italic font-semibold">Orchestrated.</span>
-          </h2>
-
-          <p className="text-[13px] text-slate-300/90 font-normal leading-relaxed">
-            Enterprise operations portal for workforce attendance, statutory leave
-            quotas, task tracking, and AI attrition-risk insights.
-          </p>
-        </div>
-      </div>
-
-      {/* RIGHT FORM PANEL (SPREAD TO COVER FULL HEIGHT) */}
-      <div className="flex flex-col justify-between lg:col-span-5 xl:col-span-4 px-6 sm:px-10 lg:px-12 py-10 lg:py-14 bg-white min-h-screen">
-        {/* Top Header / Mobile Branding */}
-        <div className="w-full max-w-sm mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-display font-bold text-xs flex items-center justify-center shadow-xs">
-              BB
-            </div>
-            <span className="font-display font-semibold text-slate-900 text-sm">
-              CorpHR <span className="text-slate-400 font-normal">/ BlueBoxx</span>
-            </span>
-          </div>
-          <span className="text-[11px] font-medium text-slate-400">v4.2 Enterprise</span>
-        </div>
-
-        {/* Middle Form Area */}
-        <div className="w-full max-w-sm mx-auto my-auto py-6">
+      {/* Main Login Card */}
+      <main className="w-full max-w-md mx-auto my-auto py-6">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xl shadow-slate-200/40">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="font-display text-[2.25rem] font-semibold text-slate-900 tracking-tight leading-tight">
+          <div className="mb-6 text-left">
+            <h1 className="font-display text-[2.1rem] sm:text-[2.25rem] font-semibold text-slate-900 tracking-tight leading-tight">
               Welcome back
             </h1>
-            <p className="text-sm text-slate-500 mt-2 font-normal">
+            <p className="text-sm text-slate-500 mt-1.5 font-normal">
               Enter your details to sign in to your portal.
             </p>
           </div>
 
+          {/* Error Notice */}
           {error && (
             <div className="mb-6 p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
               {error}
@@ -121,7 +80,7 @@ export default function LoginPage() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-2 tracking-wide">
                 Email address
@@ -133,8 +92,9 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0f365e] focus:ring-1 focus:ring-[#0f365e] transition-all"
-                  placeholder="name@company.com"
+                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0f365e] focus:ring-1 focus:ring-[#0f365e] transition-all"
+                  placeholder="name@blueboxx.com"
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -150,8 +110,9 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0f365e] focus:ring-1 focus:ring-[#0f365e] transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0f365e] focus:ring-1 focus:ring-[#0f365e] transition-all"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -175,38 +136,42 @@ export default function LoginPage() {
                 <span>Remember for 30 days</span>
               </label>
 
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
+              <button
+                type="button"
+                onClick={() => {
                   setToastMessage('Password reset link sent to your registered email.');
                   setTimeout(() => setToastMessage(null), 4000);
                 }}
-                className="font-semibold text-[#0f365e] hover:underline underline-offset-2"
+                className="font-semibold text-[#0f365e] hover:underline underline-offset-2 cursor-pointer"
               >
                 Forgot password?
-              </a>
+              </button>
             </div>
 
-            <div className="pt-3">
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white text-sm font-semibold rounded-lg shadow-xs transition-all duration-150 cursor-pointer disabled:opacity-50"
+                className="w-full py-3 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white text-sm font-semibold rounded-lg shadow-xs transition-all duration-150 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {submitting ? 'Signing in…' : 'Sign in'}
               </button>
             </div>
           </form>
         </div>
+      </main>
 
-        {/* Bottom Security / Copyright Footer */}
-        <div className="w-full max-w-sm mx-auto pt-4 text-center border-t border-slate-100">
-          <p className="text-[11px] text-slate-400 font-medium">
-            Protected by enterprise 256-bit SSL encryption
-          </p>
+      {/* Bottom Security / Copyright Footer */}
+      <footer className="w-full max-w-md mx-auto pt-4 text-center">
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium mb-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+          <span>Protected by enterprise 256-bit SSL encryption</span>
         </div>
-      </div>
+        <p className="text-[10px] text-slate-400">
+          © 2026 BlueBoxx Business Solutions Pvt Ltd.
+        </p>
+      </footer>
+
       <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
     </div>
   );
