@@ -9,6 +9,7 @@ import { fetchApi } from '@/lib/api';
 import { Toast } from '@/components/ui/Toast';
 import { Clock, CheckCircle2, Edit3, X } from '@/components/ui/Icon';
 import { useAuth } from '@/lib/auth-context';
+import { getCurrentLocation } from '@/lib/geolocation';
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return 'N/A';
@@ -59,6 +60,7 @@ export default function EmployeeAttendancePage() {
   const [attendances, setAttendances] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [schedule, setSchedule] = useState<any>(null);
+  const [officeLocation, setOfficeLocation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -89,10 +91,11 @@ export default function EmployeeAttendancePage() {
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const [histRes, sumRes, schedRes] = await Promise.all([
+      const [histRes, sumRes, schedRes, locRes] = await Promise.all([
         fetchApi('/attendance/history'),
         fetchApi('/attendance/summary').catch(() => null),
         fetchApi('/attendance/schedule').catch(() => null),
+        fetchApi('/attendance/office-location').catch(() => null),
       ]);
       setAttendances(histRes.attendances || []);
       if (sumRes?.my_today) {
@@ -100,6 +103,9 @@ export default function EmployeeAttendancePage() {
       }
       if (schedRes?.schedule) {
         setSchedule(schedRes.schedule);
+      }
+      if (locRes?.office_location) {
+        setOfficeLocation(locRes.office_location);
       }
     } catch (err) {
       if (showLoading) setToastMessage('Failed to load attendance history');
@@ -112,14 +118,22 @@ export default function EmployeeAttendancePage() {
     setCheckingIn(true);
     try {
       const clientTime = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
+      const coords = await getCurrentLocation().catch((err: any) => {
+        throw new Error(err.message || 'Office location verification required: Please allow GPS location in your browser.');
+      });
+
       const res = await fetchApi('/attendance/check-in', {
         method: 'POST',
-        body: JSON.stringify({ time: clientTime }),
+        body: JSON.stringify({
+          time: clientTime,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        }),
       });
-      setToastMessage(res.message || 'Checked in!');
+      setToastMessage(res.message || 'Checked in successfully!');
       await loadData();
     } catch (err: any) {
-      setToastMessage(err.message || 'Check-in failed');
+      setToastMessage(err.message || 'Check-in failed: You must be at the office premises to clock in.');
     } finally {
       setCheckingIn(false);
     }
@@ -240,21 +254,28 @@ export default function EmployeeAttendancePage() {
                 {schedule?.shift_name || 'General Day Shift'}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                {formatTime(schedule?.start_time || '10:00:00')} - {formatTime(schedule?.end_time || '18:00:00')}
+                Mon–Fri: {formatTime(schedule?.start_time || '10:00:00')} - {formatTime(schedule?.regular_end_time || '18:00:00')} • Sat: {formatTime(schedule?.start_time || '10:00:00')} - {formatTime(schedule?.saturday_end_time || '14:00:00')}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              Working Days: {schedule?.work_days ? schedule.work_days.join(', ') : 'Mon - Fri'} • Grace Period: {schedule?.grace_period_minutes ?? 15} mins
+              Working Days: {schedule?.work_days ? schedule.work_days.join(', ') : 'Mon - Sat'} • Grace Period: {schedule?.grace_period_minutes ?? 15} mins
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/80 border border-slate-200 px-3 py-2 rounded-lg text-slate-700 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11px]">
-            <strong>Auto Clock-Out:</strong> System automatically clocks out at{' '}
-            <strong className="text-emerald-700">{formatTime(schedule?.end_time || '18:00:00')}</strong>
-          </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex items-center gap-2 bg-white/80 border border-slate-200 px-3 py-2 rounded-lg text-slate-700 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px]">
+              <strong>Auto Checkout:</strong> Mon–Fri <strong className="text-emerald-700">6:00 PM</strong> • Sat <strong className="text-indigo-700">2:00 PM</strong>
+            </span>
+          </div>
+          {officeLocation && (
+            <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-lg text-indigo-900 text-[11px] font-semibold">
+              <span>📍</span>
+              <span><strong>Office Geofence:</strong> {officeLocation.name} ({officeLocation.radius_meters}m)</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -53,6 +53,8 @@ export interface UserProfile {
   designation?: string;
   organization?: string;
   organization_id?: number;
+  organization_logo?: string;
+  organization_icon_logo?: string;
   avatar?: string;
   base_salary?: number;
   joining_date?: string;
@@ -69,6 +71,7 @@ interface AuthContextType {
   login: (token: string, userData: UserProfile) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateOrganizationLogo: (logoUrl: string, iconLogoUrl?: string) => void;
   isAdmin: boolean;
   isHR: boolean;
   isCompanyManager: boolean;
@@ -84,6 +87,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: async () => {},
   refreshUser: async () => {},
+  updateOrganizationLogo: () => {},
   isAdmin: false,
   isHR: false,
   isCompanyManager: false,
@@ -165,6 +169,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateOrganizationLogo = (logoUrl: string, iconLogoUrl?: string) => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        organization_logo: logoUrl,
+        organization_icon_logo: iconLogoUrl || user.organization_icon_logo || logoUrl,
+      };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const role = strtolower(user?.role || '');
   const isAdmin = role === 'admin';
   const isHR = role === 'hr';
@@ -182,6 +198,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         logout,
         refreshUser,
+        updateOrganizationLogo,
         isAdmin,
         isHR,
         isCompanyManager,

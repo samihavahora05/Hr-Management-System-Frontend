@@ -160,7 +160,7 @@ export function EmployeeDashboard({
               }`}>
                 {isCheckedOut 
                   ? (myTodayAttendance.notes?.includes('Auto check-out') ? '⚡ Auto Checked Out' : '✓ Checked Out') 
-                  : (myTodayAttendance.status === 'late' ? '● Checked in late' : '✓ Active (Auto Clock-out at Shift End)')}
+                  : (myTodayAttendance.status === 'late' ? '● Late (Auto Checkout: 6 PM / Sat 2 PM)' : '✓ Active (Auto Checkout: 6 PM / Sat 2 PM)')}
               </p>
             </>
           ) : (
