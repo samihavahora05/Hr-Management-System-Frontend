@@ -91,6 +91,7 @@ export function Sidebar() {
       { label: 'Organization', href: '/admin/organization', icon: Building2 },
       { label: 'Settings', href: '/admin/settings', icon: Settings },
       { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
+      { label: 'My Profile', href: '/profile', icon: User },
     ],
     hr: [
       { label: 'Dashboard', href: '/hr/dashboard', icon: LayoutDashboard },
@@ -108,6 +109,7 @@ export function Sidebar() {
       { label: 'HR Helpdesk', href: '/helpdesk', icon: FileText },
       { label: 'Reports', href: '/hr/reports', icon: FileText },
       { label: 'Announcements', href: '/hr/announcements', icon: Megaphone },
+      { label: 'My Profile', href: '/profile', icon: User },
     ],
     manager: [
       { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
@@ -121,6 +123,7 @@ export function Sidebar() {
       { label: 'Expenses', href: '/expenses', icon: CreditCard },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
       { label: 'Reports', href: '/manager/reports', icon: FileText },
+      { label: 'My Profile', href: '/profile', icon: User },
     ],
     team_leader: [
       { label: 'Dashboard', href: '/team-leader/dashboard', icon: LayoutDashboard },
@@ -131,7 +134,7 @@ export function Sidebar() {
       { label: 'Vault & Reports', href: '/team-leader/documents', icon: FileText },
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
-      { label: 'Profile', href: '/team-leader/profile', icon: User },
+      { label: 'Profile', href: '/profile', icon: User },
     ],
     employee: [
       { label: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard },
@@ -146,7 +149,7 @@ export function Sidebar() {
       { label: 'My Assets', href: '/assets', icon: Building2 },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
       { label: 'My Vault', href: '/employee/documents', icon: FileText },
-      { label: 'Profile', href: '/employee/profile', icon: User },
+      { label: 'Profile', href: '/profile', icon: User },
     ],
   };
 

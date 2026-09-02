@@ -34,7 +34,7 @@ export default function HRRecruitmentPage() {
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
   const [salaryOffered, setSalaryOffered] = useState('80000');
-  const [joiningDate, setJoiningDate] = useState('2026-09-01');
+  const [joiningDate, setJoiningDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     loadData();

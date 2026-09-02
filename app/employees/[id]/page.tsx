@@ -120,6 +120,22 @@ export default function EmployeeDetailPage() {
     );
   }
 
+  const formatJoiningDate = (dateVal?: string | null) => {
+    if (!dateVal) return 'N/A';
+    const clean = String(dateVal).split('T')[0].split(' ')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+    }
+    return clean;
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
       <Sidebar />
@@ -209,8 +225,17 @@ export default function EmployeeDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Joining Date</span>
-                  <div className="text-lg font-bold text-slate-900 mt-1 font-mono">
-                    {employee.joining_date ? String(employee.joining_date).split('T')[0].split(' ')[0] : 'N/A'}
+                  <div className="text-lg font-bold text-slate-900 mt-1">
+                    {employee.joining_date ? (
+                      <span className="font-sans font-extrabold text-[#0f365e]">
+                        {formatJoiningDate(employee.joining_date)}
+                        <span className="text-xs text-slate-400 font-mono font-normal ml-2">
+                          ({String(employee.joining_date).split('T')[0].split(' ')[0]})
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 font-mono">N/A</span>
+                    )}
                   </div>
                 </div>
 

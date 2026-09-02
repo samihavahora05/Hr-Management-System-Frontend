@@ -19,7 +19,7 @@ export default function EmployeesPage() {
         } else if (role === 'manager') {
           router.replace('/manager/team');
         } else {
-          router.replace('/employee/profile');
+          router.replace('/profile');
         }
       }
     }

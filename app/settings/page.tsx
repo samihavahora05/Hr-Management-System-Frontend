@@ -17,7 +17,7 @@ export default function SettingsPage() {
         if (role === 'admin') {
           router.replace('/admin/settings');
         } else {
-          router.replace('/employee/profile');
+          router.replace('/profile');
         }
       }
     }

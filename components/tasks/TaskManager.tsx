@@ -752,20 +752,35 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
                       {/* STATUS DISPLAY (EDITABLE ONLY BY ASSIGNEE) */}
                       <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {isTaskAssignee(task) ? (
-                          <select
-                            value={(task.status as any) === 'pending' ? 'todo' : task.status}
-                            onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
-                              task.status
-                            )}`}
-                          >
-                            <option value="todo">To Do</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        ) : (
+                        {isTaskAssignee(task) ? (() => {
+                          const curr = ((task.status as any) === 'pending' ? 'todo' : task.status) as string;
+                          const isTodo = curr === 'todo';
+                          const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
+                          const isCompleted = curr === 'completed' || curr === 'cancelled';
+                          const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
+
+                          return (
+                            <select
+                              value={curr}
+                              onChange={(e) => {
+                                const target = e.target.value;
+                                if (target === 'completed' && hasIncompleteSubtasks) {
+                                  setToastMessage('Please complete all checklist subtasks first.');
+                                  return;
+                                }
+                                handleStatusChange(task.id, target);
+                              }}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
+                                task.status
+                              )}`}
+                            >
+                              <option value="todo" disabled={!isTodo && !isAdminMode}>To Do</option>
+                              <option value="in_progress" disabled={isCompleted && !isAdminMode}>In Progress</option>
+                              <option value="completed">Completed</option>
+                              <option value="cancelled" disabled={isCompleted && !isAdminMode}>Cancelled</option>
+                            </select>
+                          );
+                        })() : (
                           <span
                             title="Status view only (Assignee updates status)"
                             className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize ${getStatusBadge(
@@ -777,25 +792,44 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         )}
                       </td>
 
-                      {/* PROMINENT SUBMIT COMPLETED BUTTON (ONLY FOR ASSIGNEE) */}
+                      {/* PROMINENT SUBMIT COMPLETED BUTTON & DELETE ACTION */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {task.status === 'completed' ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Done
-                          </span>
-                        ) : isTaskAssignee(task) ? (
-                          <button
-                            onClick={() => handleStatusChange(task.id, 'completed')}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition-all flex items-center gap-1.5 mx-auto cursor-pointer"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Mark Completed</span>
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 font-medium italic" title="Assignee updates task status">
-                            View status only
-                          </span>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {task.status === 'completed' ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Done
+                            </span>
+                          ) : isTaskAssignee(task) ? (
+                            <button
+                              onClick={() => {
+                                const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
+                                if (hasIncompleteSubtasks) {
+                                  setToastMessage('Please complete all checklist subtasks first.');
+                                  return;
+                                }
+                                handleStatusChange(task.id, 'completed');
+                              }}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Mark Completed</span>
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 font-medium italic" title="Assignee updates task status">
+                              View status only
+                            </span>
+                          )}
+
+                          {(isAdminMode || !isEmployeeMode || task.assigner_id === user?.id) && (
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                              title="Delete task from system"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1108,20 +1142,35 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-600">Status:</span>
-                {isTaskAssignee(selectedTask) ? (
-                  <select
-                    value={(selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status}
-                    onChange={(e) => handleStatusChange(selectedTask.id, e.target.value)}
-                    className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
-                      selectedTask.status
-                    )}`}
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                ) : (
+                {isTaskAssignee(selectedTask) ? (() => {
+                  const curr = ((selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status) as string;
+                  const isTodo = curr === 'todo';
+                  const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
+                  const isCompleted = curr === 'completed' || curr === 'cancelled';
+                  const hasIncompleteSubtasks = selectedTask.subtasks && selectedTask.subtasks.length > 0 && selectedTask.subtasks.some((s) => !s.completed);
+
+                  return (
+                    <select
+                      value={curr}
+                      onChange={(e) => {
+                        const target = e.target.value;
+                        if (target === 'completed' && hasIncompleteSubtasks) {
+                          setToastMessage('Please complete all checklist subtasks first.');
+                          return;
+                        }
+                        handleStatusChange(selectedTask.id, target);
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize cursor-pointer focus:outline-hidden ${getStatusBadge(
+                        selectedTask.status
+                      )}`}
+                    >
+                      <option value="todo" disabled={!isTodo && !isAdminMode}>To Do</option>
+                      <option value="in_progress" disabled={isCompleted && !isAdminMode}>In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled" disabled={isCompleted && !isAdminMode}>Cancelled</option>
+                    </select>
+                  );
+                })() : (
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-extrabold border capitalize ${getStatusBadge(
                       selectedTask.status
@@ -1239,10 +1288,11 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
             {/* FOOTER ACTIONS */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              {(selectedTask.assigner_id === user?.id || !isEmployeeMode) ? (
+              {(isAdminMode || !isEmployeeMode || selectedTask.assigner_id === user?.id) ? (
                 <button
                   onClick={() => handleDeleteTask(selectedTask.id)}
-                  className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Delete task from organization database"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Delete Task</span>
