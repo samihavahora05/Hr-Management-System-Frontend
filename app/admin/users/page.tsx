@@ -40,7 +40,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState('employee');
   const [department, setDepartment] = useState('Engineering');
   const [designation, setDesignation] = useState('Software Developer');
-  const [joiningDate, setJoiningDate] = useState('2026-08-19');
+  const [joiningDate, setJoiningDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [baseSalary, setBaseSalary] = useState('75000');
   const [phone, setPhone] = useState('');
   const [managerId, setManagerId] = useState<string | number>('');
@@ -190,7 +190,7 @@ export default function AdminUsersPage() {
     setEditRole(u.role?.name || 'employee');
     setEditDepartment(u.department || 'Engineering');
     setEditDesignation(u.designation || 'Staff');
-    setEditJoiningDate(u.joining_date ? String(u.joining_date).slice(0, 10) : '2026-08-19');
+    setEditJoiningDate(u.joining_date ? String(u.joining_date).slice(0, 10) : new Date().toISOString().slice(0, 10));
     setEditBaseSalary(u.base_salary ? String(u.base_salary) : '75000');
     setEditPhone(u.phone || '');
     setEditManagerId(u.manager_id || '');

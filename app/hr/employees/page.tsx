@@ -39,7 +39,7 @@ export default function HREmployeesPage() {
   const [role, setRole] = useState('employee');
   const [department, setDepartment] = useState('Engineering');
   const [designation, setDesignation] = useState('Full Stack Developer');
-  const [joiningDate, setJoiningDate] = useState('2026-08-18');
+  const [joiningDate, setJoiningDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [baseSalary, setBaseSalary] = useState('85000');
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -264,7 +264,7 @@ export default function HREmployeesPage() {
 
               <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[10px] text-slate-400 font-medium">
-                  Joined {emp.joining_date ? String(emp.joining_date).split('T')[0].split(' ')[0] : '2024'}
+                  Joined {emp.joining_date ? String(emp.joining_date).split('T')[0].split(' ')[0] : 'N/A'}
                 </span>
                 <Link
                   href={`/employees/${emp.id}`}

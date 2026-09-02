@@ -9,7 +9,7 @@ import { Toast } from '@/components/ui/Toast';
 import { fetchApi } from '@/lib/api';
 import { Edit } from '@/components/ui/Icon';
 
-export default function TeamLeaderProfilePage() {
+export default function GeneralProfilePage() {
   const { user, refreshUser, login } = useAuth();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -84,11 +84,21 @@ export default function TeamLeaderProfilePage() {
     return clean;
   };
 
+  // Determine current portal namespace
+  const getNamespace = (): 'admin' | 'hr' | 'manager' | 'team_leader' | 'employee' => {
+    const r = (user?.role || '').toLowerCase();
+    if (r === 'admin') return 'admin';
+    if (r === 'hr') return 'hr';
+    if (r === 'manager' || r === 'company_manager') return 'manager';
+    if (r === 'team_leader' || r === 'tl' || r === 'team_lead') return 'team_leader';
+    return 'employee';
+  };
+
   return (
-    <PortalLayout namespace="team_leader">
+    <PortalLayout namespace={getNamespace()}>
       <PageHeader
         title="My Profile"
-        description="Team Leader personal profile details and system access"
+        description="View and update your personal details, contact numbers, and employment parameters"
         action={
           <button
             onClick={openEditModal}
@@ -100,18 +110,23 @@ export default function TeamLeaderProfilePage() {
         }
       />
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs max-w-2xl space-y-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-[#0f365e] text-white font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0">
-              {user?.name ? user.name[0] : 'T'}
+              {user?.name ? user.name[0] : 'U'}
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-lg">{user?.name}</h3>
-              <p className="text-xs text-slate-500 font-semibold">{user?.designation || 'Team Leader'}</p>
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-extrabold capitalize">
-                {user?.role_display || 'Team Leader'}
-              </span>
+              <h2 className="text-xl font-extrabold text-slate-900">{user?.name}</h2>
+              <p className="text-xs font-mono font-bold text-[#0f365e]">{user?.employee_code || 'N/A'}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-slate-500 capitalize">
+                  {user?.designation || user?.role_display || 'Staff'} • {user?.department || 'General'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-extrabold capitalize border border-indigo-200">
+                  {user?.role_display || user?.role || 'Staff'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -124,43 +139,52 @@ export default function TeamLeaderProfilePage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
           <div>
-            <span className="text-slate-400 font-bold uppercase block mb-1">Employee Code</span>
-            <span className="font-bold text-slate-900">{user?.employee_code || 'N/A'}</span>
+            <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Email Address</label>
+            <p className="font-mono text-sm text-slate-900 font-semibold">{user?.email}</p>
           </div>
-
           <div>
-            <span className="text-slate-400 font-bold uppercase block mb-1">Department</span>
-            <span className="font-bold text-slate-900">{user?.department || 'General'}</span>
+            <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Phone Number</label>
+            <p className="text-sm text-slate-900 font-semibold">{user?.phone || 'N/A'}</p>
           </div>
-
           <div>
-            <span className="text-slate-400 font-bold uppercase block mb-1">Email Address</span>
-            <span className="font-bold text-slate-900">{user?.email}</span>
+            <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Department</label>
+            <p className="text-sm text-slate-900 font-semibold">{user?.department || 'General'}</p>
           </div>
-
           <div>
-            <span className="text-slate-400 font-bold uppercase block mb-1">Manager</span>
-            <span className="font-bold text-slate-900">{user?.manager_name || 'N/A'}</span>
+            <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Designation</label>
+            <p className="text-sm text-slate-900 font-semibold">{user?.designation || user?.role_display || 'Staff'}</p>
           </div>
-
           <div>
-            <span className="text-slate-400 font-bold uppercase block mb-1">Joining Date</span>
-            <span className="font-bold text-slate-900">
+            <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Joining Date</label>
+            <p className="text-sm text-slate-900 font-semibold">
               {user?.joining_date ? formatJoiningDate(user.joining_date) : 'N/A'}
               {user?.joining_date && (
                 <span className="text-xs text-slate-400 font-mono ml-2 font-normal">
                   ({String(user.joining_date).split('T')[0].split(' ')[0]})
                 </span>
               )}
+            </p>
+          </div>
+          <div>
+            <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Employment Status</label>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold capitalize">
+              {user?.status || 'Active'}
             </span>
           </div>
-
-          <div>
-            <span className="text-slate-400 font-bold uppercase block mb-1">Phone Number</span>
-            <span className="font-bold text-slate-900">{user?.phone || 'N/A'}</span>
-          </div>
+          {user?.manager_name && (
+            <div>
+              <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Reporting Manager</label>
+              <p className="text-sm text-slate-900 font-semibold">{user.manager_name}</p>
+            </div>
+          )}
+          {user?.organization && (
+            <div>
+              <label className="text-slate-400 font-bold uppercase tracking-wider block mb-1">Organization</label>
+              <p className="text-sm text-slate-900 font-semibold">{user.organization}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -175,7 +199,7 @@ export default function TeamLeaderProfilePage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-              placeholder="e.g. Alex Morgan"
+              placeholder="e.g. John Doe"
             />
           </div>
 
@@ -187,7 +211,7 @@ export default function TeamLeaderProfilePage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-              placeholder="e.g. alex@blueboxx.com"
+              placeholder="e.g. john@blueboxx.com"
             />
           </div>
 
@@ -222,7 +246,7 @@ export default function TeamLeaderProfilePage() {
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-                placeholder="e.g. Engineering, Operations"
+                placeholder="e.g. Engineering, Sales, Human Resources"
               />
             </div>
 
@@ -233,7 +257,7 @@ export default function TeamLeaderProfilePage() {
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-                placeholder="e.g. Lead Engineer"
+                placeholder="e.g. Senior Software Engineer"
               />
             </div>
           </div>

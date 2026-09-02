@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
 import { LogOut, Search, Settings, CheckCircle2, Clock, Bell } from '@/components/ui/Icon';
 import { Toast } from '@/components/ui/Toast';
+import { Modal } from '@/components/ui/Modal';
 
 function formatTimeDisplay(timeStr?: string | null): string {
   if (!timeStr) return '';
@@ -40,13 +41,13 @@ export function Topbar() {
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedNotif, setSelectedNotif] = useState<any | null>(null);
+  const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadTodayAttendance();
       loadUnreadNotifications();
-      const interval = setInterval(loadUnreadNotifications, 20000);
-      return () => clearInterval(interval);
     } else {
       setLoadingAttendance(false);
     }
@@ -73,8 +74,18 @@ export function Topbar() {
       setLoadingNotifs(true);
       try {
         const res = await fetchApi('/notifications');
-        setNotificationsList(res.notifications || []);
-        if (typeof res.unread_count === 'number') setUnreadCount(res.unread_count);
+        const list = res.notifications || [];
+        setNotificationsList(list);
+        if (typeof res.unread_count === 'number') {
+          setUnreadCount(res.unread_count);
+        }
+
+        // When user opens the notification dropdown, automatically mark unread notifications as read
+        if (res.unread_count && res.unread_count > 0) {
+          fetchApi('/notifications/read-all', { method: 'POST' }).catch(() => {});
+          setUnreadCount(0);
+          setNotificationsList(list.map((n: any) => ({ ...n, is_read: true })));
+        }
       } catch (e) {
         // ignore
       } finally {
@@ -95,21 +106,22 @@ export function Topbar() {
   };
 
   const handleNotificationClick = async (notif: any) => {
-    try {
-      if (!notif.is_read) {
+    // Automatically mark it as read immediately
+    if (!notif.is_read) {
+      setUnreadCount((c) => Math.max(0, c - 1));
+      setNotificationsList((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+      );
+      try {
         await fetchApi(`/notifications/${notif.id}/read`, { method: 'POST' });
-        setUnreadCount((c) => Math.max(0, c - 1));
-        setNotificationsList((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
-        );
+      } catch (e) {
+        // ignore
       }
-      setIsNotifDropdownOpen(false);
-      if (notif.action_url) {
-        router.push(notif.action_url);
-      }
-    } catch (e) {
-      // ignore
     }
+
+    setIsNotifDropdownOpen(false);
+    setSelectedNotif(notif);
+    setIsNotifModalOpen(true);
   };
 
   const loadTodayAttendance = async () => {
@@ -185,7 +197,7 @@ export function Topbar() {
       ? '/hr/employees'
       : activeNamespace === 'manager'
       ? '/manager/team'
-      : '/employee/profile';
+      : '/profile';
 
   const reportsHref = `/${activeNamespace}/reports`;
 
@@ -398,12 +410,13 @@ export function Topbar() {
             <Settings className="w-4 h-4" />
           </Link>
 
-          <div
-            className="w-8 h-8 rounded-full bg-[#0f365e] text-white font-bold text-xs flex items-center justify-center shadow-2xs cursor-default"
-            title={user?.name || 'User'}
+          <Link
+            href="/profile"
+            className="w-8 h-8 rounded-full bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs flex items-center justify-center shadow-2xs transition-all ring-offset-1 hover:ring-2 hover:ring-[#0f365e] cursor-pointer"
+            title={`${user?.name || 'User'} (My Profile)`}
           >
             {user?.name ? user.name[0] : 'U'}
-          </div>
+          </Link>
 
           <button
             onClick={handleLogout}
@@ -416,6 +429,75 @@ export function Topbar() {
       </div>
 
       <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
+
+      {/* NOTIFICATION DETAIL MODAL */}
+      <Modal
+        isOpen={isNotifModalOpen}
+        onClose={() => setIsNotifModalOpen(false)}
+        title={selectedNotif?.title || 'Notification Details'}
+        maxWidth="md"
+      >
+        {selectedNotif && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <span
+                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                  selectedNotif.type === 'success'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : selectedNotif.type === 'warning'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-indigo-100 text-[#0f365e]'
+                }`}
+              >
+                {selectedNotif.type || 'Notice'}
+              </span>
+              <span className="font-mono text-slate-400 text-[11px]">
+                {selectedNotif.created_at
+                  ? new Date(selectedNotif.created_at).toLocaleString([], {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })
+                  : 'Recently'}
+              </span>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 mb-2">
+                {selectedNotif.title}
+              </h3>
+              <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                {selectedNotif.message}
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Marked as read
+              </span>
+
+              <div className="flex items-center gap-2">
+                {(selectedNotif.link || selectedNotif.action_url) && (
+                  <button
+                    onClick={() => {
+                      setIsNotifModalOpen(false);
+                      router.push(selectedNotif.link || selectedNotif.action_url);
+                    }}
+                    className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer transition-colors"
+                  >
+                    View Related Page →
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsNotifModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </header>
   );
 }
