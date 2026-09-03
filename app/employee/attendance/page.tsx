@@ -196,6 +196,21 @@ export default function EmployeeAttendancePage() {
   const hasCheckedIn = !!todayAttendance?.check_in;
   const hasCheckedOut = !!todayAttendance?.check_out;
 
+  const isPastAutoCheckout = () => {
+    if (!schedule?.today_auto_checkout_time) {
+      return new Date().getDay() === 6 ? new Date().getHours() >= 14 : new Date().getHours() >= 18;
+    }
+    const parts = schedule.today_auto_checkout_time.split(':');
+    const cutoffHour = parseInt(parts[0], 10);
+    const cutoffMin = parseInt(parts[1] || '0', 10);
+    const now = new Date();
+    return now.getHours() > cutoffHour || (now.getHours() === cutoffHour && now.getMinutes() >= cutoffMin);
+  };
+
+  const autoCheckoutDisplayTime = formatTime(
+    schedule?.today_auto_checkout_time || (new Date().getDay() === 6 ? '14:00:00' : '18:00:00')
+  );
+
   return (
     <PortalLayout namespace="employee">
       <PageHeader
@@ -204,9 +219,14 @@ export default function EmployeeAttendancePage() {
         action={
           <div className="flex gap-2 items-center">
             {hasCheckedIn ? (
-              <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-xl flex items-center gap-1.5 text-xs">
+              <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-xl flex items-center gap-1.5 text-xs select-none">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>In: {formatTime(todayAttendance.check_in)}</span>
+              </div>
+            ) : isPastAutoCheckout() ? (
+              <div className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-400 font-bold rounded-xl flex items-center gap-1.5 text-xs select-none cursor-not-allowed" title="Shift ended. Check-in closed for today.">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <span>Shift Ended</span>
               </div>
             ) : (
               <button
@@ -227,10 +247,10 @@ export default function EmployeeAttendancePage() {
                   <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
                 )}
               </div>
-            ) : hasCheckedIn && (new Date().getDay() === 6 ? new Date().getHours() >= 14 : new Date().getHours() >= 18) ? (
+            ) : hasCheckedIn && isPastAutoCheckout() ? (
               <div className="px-3 py-1.5 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 text-xs select-none" title="Shift ended. Auto check-out triggered.">
                 <CheckCircle2 className="w-4 h-4 text-slate-500" />
-                <span>Out: {new Date().getDay() === 6 ? '02:00 PM' : '06:00 PM'}</span>
+                <span>Out: {autoCheckoutDisplayTime}</span>
                 <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
               </div>
             ) : (

@@ -26,6 +26,7 @@ import {
   LogOut,
   ListTodo,
   Sparkles,
+  Receipt,
 } from '@/components/ui/Icon';
 
 export function Sidebar() {
@@ -75,6 +76,7 @@ export function Sidebar() {
       { label: 'Users & Master', href: '/admin/users', icon: Users },
       { label: 'Document Vault', href: '/admin/documents', icon: FileText },
       { label: 'Departments', href: '/admin/departments', icon: Building2 },
+      { label: 'Invoices', href: '/admin/invoices', icon: Receipt },
       { label: 'Payroll & Slips', href: '/admin/payroll', icon: CreditCard },
       { label: 'Tasks', href: '/admin/tasks', icon: ListTodo },
       { label: 'Performance', href: '/admin/performance', icon: TrendingUp },

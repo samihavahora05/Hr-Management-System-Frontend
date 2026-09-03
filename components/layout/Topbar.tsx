@@ -274,54 +274,73 @@ export function Topbar() {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            {/* Check In Button */}
-            {hasCheckedIn ? (
-              <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-lg flex items-center gap-1.5 text-xs">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>In: {formatTimeDisplay(todayAttendance.check_in)}</span>
-              </div>
-            ) : (
-              <button
-                onClick={handleCheckIn}
-                disabled={checkingIn}
-                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-lg shadow-2xs transition-all cursor-pointer text-xs disabled:opacity-50 flex items-center gap-1.5"
-                title="Record your daily check-in time"
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>{checkingIn ? 'Recording...' : 'Check In'}</span>
-              </button>
-            )}
+            {(() => {
+              const shiftEndTime = user?.shift?.end_time || '18:00:00';
+              const isSaturday = new Date().getDay() === 6;
+              const effectiveCutoffTime = isSaturday ? '14:00:00' : shiftEndTime;
+              const cutoffHour = parseInt(effectiveCutoffTime.split(':')[0], 10);
+              const cutoffMin = parseInt(effectiveCutoffTime.split(':')[1] || '0', 10);
+              const now = new Date();
+              const isPastAutoCheckout = now.getHours() > cutoffHour || (now.getHours() === cutoffHour && now.getMinutes() >= cutoffMin);
 
-            {/* Check Out Button */}
-            {hasCheckedOut ? (
-              <div className="px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-default" title={todayAttendance.notes || 'Attendance checked out'}>
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
-                <span>Out: {formatTimeDisplay(todayAttendance.check_out)}</span>
-                {todayAttendance.notes?.includes('Auto check-out') && (
-                  <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
-                )}
-              </div>
-            ) : hasCheckedIn && (new Date().getDay() === 6 ? new Date().getHours() >= 14 : new Date().getHours() >= 18) ? (
-              <div className="px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-default" title="Shift ended. Auto check-out triggered.">
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
-                <span>Out: {new Date().getDay() === 6 ? '02:00 PM' : '06:00 PM'}</span>
-                <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
-              </div>
-            ) : (
-              <button
-                onClick={handleCheckOut}
-                disabled={checkingOut || !hasCheckedIn}
-                className={`px-3.5 py-1.5 font-bold rounded-lg shadow-2xs transition-all text-xs flex items-center gap-1.5 ${
-                  hasCheckedIn
-                    ? 'bg-rose-600 hover:bg-rose-700 active:scale-95 text-white cursor-pointer'
-                    : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                }`}
-                title={!hasCheckedIn ? 'Must check in first before checking out' : 'Record your daily check-out time'}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>{checkingOut ? 'Recording...' : 'Check Out'}</span>
-              </button>
-            )}
+              return (
+                <>
+                  {/* Check In Status / Button */}
+                  {hasCheckedIn ? (
+                    <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>In: {formatTimeDisplay(todayAttendance.check_in)}</span>
+                    </div>
+                  ) : isPastAutoCheckout ? (
+                    <div className="px-3 py-1 bg-slate-100 border border-slate-200 text-slate-400 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-not-allowed" title="Shift ended. Check-in closed for today.">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Shift Ended</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCheckIn}
+                      disabled={checkingIn}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-lg shadow-2xs transition-all cursor-pointer text-xs disabled:opacity-50 flex items-center gap-1.5"
+                      title="Record your daily check-in time"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{checkingIn ? 'Recording...' : 'Check In'}</span>
+                    </button>
+                  )}
+
+                  {/* Check Out Status / Button */}
+                  {hasCheckedOut ? (
+                    <div className="px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-default" title={todayAttendance.notes || 'Attendance checked out'}>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Out: {formatTimeDisplay(todayAttendance.check_out)}</span>
+                      {todayAttendance.notes?.includes('Auto check-out') && (
+                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
+                      )}
+                    </div>
+                  ) : hasCheckedIn && isPastAutoCheckout ? (
+                    <div className="px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-default" title="Shift ended. Auto check-out triggered.">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Out: {formatTimeDisplay(effectiveCutoffTime)}</span>
+                      <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCheckOut}
+                      disabled={checkingOut || !hasCheckedIn}
+                      className={`px-3.5 py-1.5 font-bold rounded-lg shadow-2xs transition-all text-xs flex items-center gap-1.5 ${
+                        hasCheckedIn
+                          ? 'bg-rose-600 hover:bg-rose-700 active:scale-95 text-white cursor-pointer'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                      }`}
+                      title={!hasCheckedIn ? 'Must check in first before checking out' : 'Record your daily check-out time'}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{checkingOut ? 'Recording...' : 'Check Out'}</span>
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

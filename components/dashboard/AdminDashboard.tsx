@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Sparkles,
   Plus,
+  Receipt,
 } from '@/components/ui/Icon';
 
 export function AdminDashboard() {
@@ -200,6 +201,13 @@ export function AdminDashboard() {
               >
                 <Building2 className="w-4 h-4 text-slate-700 shrink-0" />
                 <span>Departments</span>
+              </Link>
+              <Link
+                href="/admin/invoices"
+                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Receipt className="w-4 h-4 text-[#0f365e] shrink-0" />
+                <span>Invoices</span>
               </Link>
               <Link
                 href="/admin/audit-logs"

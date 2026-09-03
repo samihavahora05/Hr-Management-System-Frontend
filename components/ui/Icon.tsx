@@ -442,3 +442,12 @@ export const Edit = (props: IconProps) => (
 );
 
 export const Pencil = Edit;
+
+export const Receipt = (props: IconProps) => (
+  <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
+    <path d="M14 8H8" />
+    <path d="M16 12H8" />
+    <path d="M13 16H8" />
+  </svg>
+);

@@ -262,32 +262,42 @@ export function EmployeeDashboard({
           <span>Apply for Leave</span>
         </Link>
 
-        {!isCheckedIn ? (
-          <button
-            onClick={onCheckIn}
-            disabled={checkingIn}
-            className="p-4 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-sm disabled:opacity-50"
-          >
-            <Clock className="w-5 h-5" />
-            <span>{checkingIn ? 'Clocking In...' : 'Clock In Now'}</span>
-          </button>
-        ) : (!isCheckedOut && !(new Date().getDay() === 6 ? new Date().getHours() >= 14 : new Date().getHours() >= 18)) ? (
-          <button
-            onClick={onCheckOut}
-            disabled={checkingIn}
-            className="p-4 bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-sm disabled:opacity-50"
-          >
-            <Clock className="w-5 h-5" />
-            <span>{checkingIn ? 'Clocking Out...' : 'Clock Out'}</span>
-          </button>
-        ) : (
-          <div className="p-4 bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-sm select-none">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <span>
-              Shift Completed Today {isCheckedOut ? `(${formatTimeDisplay(myTodayAttendance?.check_out)})` : (new Date().getDay() === 6 ? '(02:00 PM Auto)' : '(06:00 PM Auto)')}
-            </span>
-          </div>
-        )}
+        {(() => {
+          const shiftEndTime = user?.shift?.end_time || '18:00:00';
+          const isSaturday = new Date().getDay() === 6;
+          const effectiveCutoffTime = isSaturday ? '14:00:00' : shiftEndTime;
+          const cutoffHour = parseInt(effectiveCutoffTime.split(':')[0], 10);
+          const cutoffMin = parseInt(effectiveCutoffTime.split(':')[1] || '0', 10);
+          const now = new Date();
+          const isPastAutoCheckout = now.getHours() > cutoffHour || (now.getHours() === cutoffHour && now.getMinutes() >= cutoffMin);
+
+          return !isCheckedIn ? (
+            <button
+              onClick={onCheckIn}
+              disabled={checkingIn}
+              className="p-4 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-sm disabled:opacity-50"
+            >
+              <Clock className="w-5 h-5" />
+              <span>{checkingIn ? 'Clocking In...' : 'Clock In Now'}</span>
+            </button>
+          ) : (!isCheckedOut && !isPastAutoCheckout) ? (
+            <button
+              onClick={onCheckOut}
+              disabled={checkingIn}
+              className="p-4 bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-sm disabled:opacity-50"
+            >
+              <Clock className="w-5 h-5" />
+              <span>{checkingIn ? 'Clocking Out...' : 'Clock Out'}</span>
+            </button>
+          ) : (
+            <div className="p-4 bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-sm select-none">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <span>
+                Shift Completed Today {isCheckedOut ? `(${formatTimeDisplay(myTodayAttendance?.check_out)})` : `(${formatTimeDisplay(effectiveCutoffTime)} Auto)`}
+              </span>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

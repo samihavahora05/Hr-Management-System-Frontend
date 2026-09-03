@@ -62,6 +62,15 @@ export interface UserProfile {
   phone?: string;
   manager_id?: number | null;
   manager_name?: string | null;
+  shift_id?: number | null;
+  shift?: {
+    id: number;
+    name: string;
+    start_time?: string;
+    end_time?: string;
+    grace_period_minutes?: number;
+    work_days?: string[];
+  } | null;
 }
 
 interface AuthContextType {
@@ -84,10 +93,10 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   loading: true,
-  login: () => {},
-  logout: async () => {},
-  refreshUser: async () => {},
-  updateOrganizationLogo: () => {},
+  login: () => { },
+  logout: async () => { },
+  refreshUser: async () => { },
+  updateOrganizationLogo: () => { },
   isAdmin: false,
   isHR: false,
   isCompanyManager: false,
