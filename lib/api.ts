@@ -1,4 +1,4 @@
-function normalizeApiBase(base: string) {
+function normalizeApiBase(base: string): string {
   let cleaned = (base || '').trim().replace(/\/+$/, '');
   if (!cleaned) return 'http://127.0.0.1:8000/api';
   if (!cleaned.endsWith('/api')) {
@@ -7,7 +7,20 @@ function normalizeApiBase(base: string) {
   return cleaned;
 }
 
-function buildApiUrl(base: string, endpoint: string) {
+export function getPrimaryApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return normalizeApiBase(process.env.NEXT_PUBLIC_API_URL);
+  }
+
+  // If in browser on a production domain (not localhost or 127.0.0.1)
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.origin}/api`;
+  }
+
+  return 'http://127.0.0.1:8000/api';
+}
+
+function buildApiUrl(base: string, endpoint: string): string {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   if (cleanEndpoint.startsWith('/api/')) {
     const rootBase = base.replace(/\/api$/, '');
@@ -16,12 +29,8 @@ function buildApiUrl(base: string, endpoint: string) {
   return `${base}${cleanEndpoint}`;
 }
 
-const PRIMARY_API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api');
-const FALLBACK_API_BASE = 'http://localhost:8000/api';
-
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
 
   const headers: Record<string, string> = {
@@ -37,8 +46,8 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const primaryUrl = buildApiUrl(PRIMARY_API_BASE, endpoint);
-  const fallbackUrl = buildApiUrl(FALLBACK_API_BASE, endpoint);
+  const primaryBase = getPrimaryApiBase();
+  const primaryUrl = buildApiUrl(primaryBase, endpoint);
 
   let res: Response;
   try {
@@ -47,11 +56,20 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       headers,
     });
   } catch (err) {
-    // If primary fails, try fallback
-    res = await fetch(fallbackUrl, {
-      ...options,
-      headers,
-    });
+    // Fallback: try relative or alternate if primary threw a network error
+    const fallbackBase = typeof window !== 'undefined' && window.location.origin
+      ? `${window.location.origin}/api`
+      : 'http://127.0.0.1:8000/api';
+
+    if (fallbackBase !== primaryBase) {
+      const fallbackUrl = buildApiUrl(fallbackBase, endpoint);
+      res = await fetch(fallbackUrl, {
+        ...options,
+        headers,
+      });
+    } else {
+      throw err;
+    }
   }
 
   const data = await res.json().catch(() => ({}));
@@ -76,14 +94,23 @@ export async function downloadApiFile(endpoint: string, fallbackFilename = 'docu
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const primaryUrl = buildApiUrl(PRIMARY_API_BASE, endpoint);
-  const fallbackUrl = buildApiUrl(FALLBACK_API_BASE, endpoint);
+  const primaryBase = getPrimaryApiBase();
+  const primaryUrl = buildApiUrl(primaryBase, endpoint);
 
   let res: Response;
   try {
     res = await fetch(primaryUrl, { headers });
   } catch (err) {
-    res = await fetch(fallbackUrl, { headers });
+    const fallbackBase = typeof window !== 'undefined' && window.location.origin
+      ? `${window.location.origin}/api`
+      : 'http://127.0.0.1:8000/api';
+
+    if (fallbackBase !== primaryBase) {
+      const fallbackUrl = buildApiUrl(fallbackBase, endpoint);
+      res = await fetch(fallbackUrl, { headers });
+    } else {
+      throw err;
+    }
   }
 
   if (!res.ok) {
@@ -98,6 +125,6 @@ export async function downloadApiFile(endpoint: string, fallbackFilename = 'docu
   a.download = fallbackFilename;
   document.body.appendChild(a);
   a.click();
+  a.remove();
   window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
 }
