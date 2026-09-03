@@ -24,6 +24,20 @@ const DEFAULT_COMPANY_DEPARTMENTS = [
   'Operations',
 ];
 
+function format12Hour(timeStr?: string): string {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+  }
+  return timeStr;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [companyDepartments, setCompanyDepartments] = useState<string[]>(DEFAULT_COMPANY_DEPARTMENTS);
@@ -45,6 +59,8 @@ export default function AdminUsersPage() {
   const [phone, setPhone] = useState('');
   const [managerId, setManagerId] = useState<string | number>('');
   const [shiftId, setShiftId] = useState<string | number>('');
+  const [shiftStartTime, setShiftStartTime] = useState('10:00');
+  const [shiftEndTime, setShiftEndTime] = useState('18:00');
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -64,6 +80,8 @@ export default function AdminUsersPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editManagerId, setEditManagerId] = useState<string | number>('');
   const [editShiftId, setEditShiftId] = useState<string | number>('');
+  const [editShiftStartTime, setEditShiftStartTime] = useState('10:00');
+  const [editShiftEndTime, setEditShiftEndTime] = useState('18:00');
   const [editStatus, setEditStatus] = useState('active');
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -87,10 +105,30 @@ export default function AdminUsersPage() {
         setShiftsList(res.shifts);
         if (res.shifts.length > 0 && !shiftId) {
           setShiftId(res.shifts[0].id);
+          if (res.shifts[0].start_time) setShiftStartTime(res.shifts[0].start_time.slice(0, 5));
+          if (res.shifts[0].end_time) setShiftEndTime(res.shifts[0].end_time.slice(0, 5));
         }
       }
     } catch (e) {
       // ignore
+    }
+  };
+
+  const handleShiftChange = (sId: string) => {
+    setShiftId(sId);
+    const found = shiftsList.find((s) => String(s.id) === String(sId));
+    if (found) {
+      if (found.start_time) setShiftStartTime(found.start_time.slice(0, 5));
+      if (found.end_time) setShiftEndTime(found.end_time.slice(0, 5));
+    }
+  };
+
+  const handleEditShiftChange = (sId: string) => {
+    setEditShiftId(sId);
+    const found = shiftsList.find((s) => String(s.id) === String(sId));
+    if (found) {
+      if (found.start_time) setEditShiftStartTime(found.start_time.slice(0, 5));
+      if (found.end_time) setEditShiftEndTime(found.end_time.slice(0, 5));
     }
   };
 
@@ -161,7 +199,9 @@ export default function AdminUsersPage() {
           base_salary: baseSalary,
           phone,
           manager_id: managerId ? Number(managerId) : null,
-          shift_id: shiftId ? Number(shiftId) : null,
+          shift_id: shiftId && shiftId !== 'custom' ? Number(shiftId) : null,
+          shift_start_time: shiftStartTime,
+          shift_end_time: shiftEndTime,
         }),
       });
 
@@ -194,7 +234,10 @@ export default function AdminUsersPage() {
     setEditBaseSalary(u.base_salary ? String(u.base_salary) : '75000');
     setEditPhone(u.phone || '');
     setEditManagerId(u.manager_id || '');
+    const userShift = u.shift || shiftsList.find((s) => s.id === u.shift_id) || shiftsList[0];
     setEditShiftId(u.shift_id || (shiftsList[0]?.id ?? ''));
+    setEditShiftStartTime(userShift?.start_time ? userShift.start_time.slice(0, 5) : '10:00');
+    setEditShiftEndTime(userShift?.end_time ? userShift.end_time.slice(0, 5) : '18:00');
     setEditStatus(u.status || 'active');
     setIsEditModalOpen(true);
   };
@@ -217,7 +260,9 @@ export default function AdminUsersPage() {
           base_salary: editBaseSalary,
           phone: editPhone,
           manager_id: editManagerId ? Number(editManagerId) : null,
-          shift_id: editShiftId ? Number(editShiftId) : null,
+          shift_id: editShiftId && editShiftId !== 'custom' ? Number(editShiftId) : null,
+          shift_start_time: editShiftStartTime,
+          shift_end_time: editShiftEndTime,
           status: editStatus,
         }),
       });
@@ -314,9 +359,14 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <TablePrimitive
-            headers={['User', 'Email', 'Role', 'Department', 'Manager', 'Status', 'Action']}
+            headers={['User', 'Email', 'Role', 'Department', 'Shift / Timings', 'Manager', 'Status', 'Action']}
             rows={users.map((u) => {
               const isAdmin = u.role?.name === 'admin' || u.email === 'admin@blueboxx.com';
+              const uShift = u.shift || shiftsList.find((s) => s.id === u.shift_id);
+              const shiftTimeLabel = uShift?.start_time && uShift?.end_time
+                ? `${uShift.start_time.slice(0, 5)} - ${uShift.end_time.slice(0, 5)}`
+                : '10:00 - 18:00';
+
               return [
                 <div key={u.id}>
                   <div className="font-bold text-slate-900">{u.name}</div>
@@ -327,6 +377,10 @@ export default function AdminUsersPage() {
                   {u.role?.display_name || u.role?.name || 'Employee'}
                 </Badge>,
                 u.department || 'N/A',
+                <div key="shift" className="text-xs">
+                  <div className="font-semibold text-slate-800">{uShift?.name || 'General Shift'}</div>
+                  <div className="text-[11px] font-mono text-indigo-600 font-medium">{shiftTimeLabel}</div>
+                </div>,
                 u.manager?.name || 'Top-Level Admin',
                 <Badge key="status" variant={u.status === 'active' ? 'green' : 'red'}>
                   {u.status}
@@ -477,6 +531,63 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
+          {/* Shift & Working Hours */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-bold text-slate-800">
+                  Assigned Work Shift & Office Timings
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Select a template or set custom office in/out times
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                Auto Checkout: {format12Hour(shiftEndTime)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Shift Preset</span>
+                <select
+                  value={shiftId}
+                  onChange={(e) => handleShiftChange(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-bold text-[#0f365e]"
+                >
+                  <option value="custom">⚙️ Custom / Individual Timing</option>
+                  {shiftsList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Office In Time (Start)</span>
+                <input
+                  type="time"
+                  required
+                  value={shiftStartTime}
+                  onChange={(e) => setShiftStartTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-mono font-bold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Office Out / Auto Checkout</span>
+                <input
+                  type="time"
+                  required
+                  value={shiftEndTime}
+                  onChange={(e) => setShiftEndTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-mono font-bold text-slate-800"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Joining Date</label>
@@ -488,29 +599,15 @@ export default function AdminUsersPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
               />
             </div>
-
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700">Assigned Work Shift Timing</label>
-                <button
-                  type="button"
-                  onClick={() => setIsShiftModalOpen(true)}
-                  className="text-[11px] font-extrabold text-[#0f365e] hover:underline cursor-pointer"
-                >
-                  + Add Custom Shift
-                </button>
-              </div>
-              <select
-                value={shiftId}
-                onChange={(e) => setShiftId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-bold text-[#0f365e]"
-              >
-                {shiftsList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
-                  </option>
-                ))}
-              </select>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                placeholder="+91 98765 43210"
+              />
             </div>
           </div>
 
@@ -661,23 +758,6 @@ export default function AdminUsersPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Work Shift Timing</label>
-              <select
-                value={editShiftId}
-                onChange={(e) => setEditShiftId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-medium text-slate-700"
-              >
-                {shiftsList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Joining Date</label>
               <input
                 type="date"
@@ -686,16 +766,73 @@ export default function AdminUsersPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
-              <input
-                type="text"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-                placeholder="+91 98765 43210"
-              />
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+            <input
+              type="text"
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="+91 98765 43210"
+            />
+          </div>
+
+          {/* Work Shift & Office Timings */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-bold text-slate-800">
+                  Assigned Work Shift & Office Timings
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Select a template or set custom office in/out times
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                Auto Checkout: {format12Hour(editShiftEndTime)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Shift Preset</span>
+                <select
+                  value={editShiftId}
+                  onChange={(e) => handleEditShiftChange(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-bold text-[#0f365e]"
+                >
+                  <option value="custom">⚙️ Custom / Individual Timing</option>
+                  {shiftsList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Office In Time (Start)</span>
+                <input
+                  type="time"
+                  required
+                  value={editShiftStartTime}
+                  onChange={(e) => setEditShiftStartTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-mono font-bold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Office Out / Auto Checkout</span>
+                <input
+                  type="time"
+                  required
+                  value={editShiftEndTime}
+                  onChange={(e) => setEditShiftEndTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white font-mono font-bold text-slate-800"
+                />
+              </div>
             </div>
           </div>
 

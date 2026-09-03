@@ -79,10 +79,10 @@ export default function AdminAttendancePage() {
   // Geofence Modal State
   const [isGeofenceModalOpen, setIsGeofenceModalOpen] = useState(false);
   const [geofenceName, setGeofenceName] = useState('Main Office Headquarters');
-  const [geofenceAddress, setGeofenceAddress] = useState('Bandra Kurla Complex, Mumbai, Maharashtra 400051');
-  const [geofenceLat, setGeofenceLat] = useState('19.0657');
-  const [geofenceLng, setGeofenceLng] = useState('72.8687');
-  const [geofenceRadius, setGeofenceRadius] = useState('300');
+  const [geofenceAddress, setGeofenceAddress] = useState('SF 02, INDIA BULLS MEGA MALL, Dinesh Mill Rd, near Swami Vivekananda Railway Over Bridge, Anand Nagar, Akota, Vadodara, Gujarat 390022');
+  const [geofenceLat, setGeofenceLat] = useState('22.2955');
+  const [geofenceLng, setGeofenceLng] = useState('73.1764');
+  const [geofenceRadius, setGeofenceRadius] = useState('2000');
   const [geofenceEnabled, setGeofenceEnabled] = useState(true);
   const [savingGeofence, setSavingGeofence] = useState(false);
   const [fetchingGps, setFetchingGps] = useState(false);
@@ -94,9 +94,9 @@ export default function AdminAttendancePage() {
         const loc = res.office_location;
         setGeofenceName(loc.name || 'Main Office Headquarters');
         setGeofenceAddress(loc.address || '');
-        setGeofenceLat(String(loc.latitude || '19.0657'));
-        setGeofenceLng(String(loc.longitude || '72.8687'));
-        setGeofenceRadius(String(loc.radius_meters || '300'));
+        setGeofenceLat(String(loc.latitude || '22.2955'));
+        setGeofenceLng(String(loc.longitude || '73.1764'));
+        setGeofenceRadius(String(loc.radius_meters || '2000'));
         setGeofenceEnabled(loc.enabled !== false);
       }
     } catch (err) {
@@ -702,7 +702,7 @@ export default function AdminAttendancePage() {
                   type="text"
                   value={geofenceAddress}
                   onChange={(e) => setGeofenceAddress(e.target.value)}
-                  placeholder="e.g. Bandra Kurla Complex, Mumbai, Maharashtra"
+                  placeholder="e.g. SF 02, INDIA BULLS MEGA MALL, Akota, Vadodara"
                   className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
               </div>
@@ -731,7 +731,7 @@ export default function AdminAttendancePage() {
                       required
                       value={geofenceLat}
                       onChange={(e) => setGeofenceLat(e.target.value)}
-                      placeholder="19.065700"
+                      placeholder="22.295500"
                       className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 font-mono text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
@@ -743,7 +743,7 @@ export default function AdminAttendancePage() {
                       required
                       value={geofenceLng}
                       onChange={(e) => setGeofenceLng(e.target.value)}
-                      placeholder="72.868700"
+                      placeholder="73.176400"
                       className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 font-mono text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
@@ -769,7 +769,7 @@ export default function AdminAttendancePage() {
                 />
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] text-slate-400 font-bold">Quick Presets:</span>
-                  {[100, 200, 300, 500, 1000].map((preset) => (
+                  {[300, 500, 1000, 2000, 3000].map((preset) => (
                     <button
                       key={preset}
                       type="button"
@@ -780,7 +780,7 @@ export default function AdminAttendancePage() {
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      {preset}m
+                      {preset >= 1000 ? `${preset / 1000}km` : `${preset}m`}
                     </button>
                   ))}
                 </div>
