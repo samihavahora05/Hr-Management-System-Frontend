@@ -10,6 +10,7 @@ import { Toast } from '@/components/ui/Toast';
 import { fetchApi } from '@/lib/api';
 import { exportToCSV } from '@/lib/export';
 import { Download, Users, Building2, CalendarDays, Search, Eye, Filter, CheckCircle2, Clock, ChevronRight } from '@/components/ui/Icon';
+import { MonthlyAttendanceReportView } from '@/components/reports/MonthlyAttendanceReportView';
 
 interface WorkforceReportsAnalyticsProps {
   portalNamespace?: 'admin' | 'hr' | 'manager';
@@ -27,7 +28,7 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [usageFilter, setUsageFilter] = useState<'all' | 'active' | 'unused'>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'leave' | 'attendance'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'leave' | 'attendance' | 'monthly_attendance'>('overview');
 
   // Interactive Modals
   const [drilldownCategory, setDrilldownCategory] = useState<any | null>(null);
@@ -234,6 +235,17 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
               >
                 Attendance Log Trends
               </button>
+              {portalNamespace === 'admin' && (
+                <button
+                  onClick={() => setActiveTab('monthly_attendance')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'monthly_attendance' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>Monthly Attendance Register</span>
+                  <span className="px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-white/20">Admin</span>
+                </button>
+              )}
             </div>
 
             {/* FILTERS */}
@@ -416,6 +428,11 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB 4: MONTHLY ATTENDANCE REGISTER & ARCHIVE (ADMIN ONLY) */}
+          {activeTab === 'monthly_attendance' && portalNamespace === 'admin' && (
+            <MonthlyAttendanceReportView />
           )}
         </div>
       )}

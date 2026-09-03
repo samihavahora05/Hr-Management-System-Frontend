@@ -7,6 +7,7 @@ import { EmployeeDashboard } from '@/components/dashboard/EmployeeDashboard';
 import { useAuth } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
 import { Toast } from '@/components/ui/Toast';
+import { getCurrentLocation } from '@/lib/geolocation';
 
 export default function EmployeeDashboardPage() {
   const { user } = useAuth();
@@ -42,11 +43,20 @@ export default function EmployeeDashboardPage() {
   const handleCheckIn = async () => {
     setCheckingIn(true);
     try {
-      const res = await fetchApi('/attendance/check-in', { method: 'POST' });
+      const coords = await getCurrentLocation().catch((err: any) => {
+        throw new Error(err.message || 'Office location verification required: Please allow GPS location in your browser.');
+      });
+      const res = await fetchApi('/attendance/check-in', {
+        method: 'POST',
+        body: JSON.stringify({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        }),
+      });
       setToastMessage(res.message || 'Checked in successfully!');
       await loadData();
     } catch (err: any) {
-      setToastMessage(err.message || 'Check-in failed');
+      setToastMessage(err.message || 'Check-in failed: You must be at the office premises to clock in.');
     } finally {
       setCheckingIn(false);
     }

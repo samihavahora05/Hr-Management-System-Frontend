@@ -196,16 +196,22 @@ export function Sidebar() {
         >
           {isCollapsed ? (
             <img
-              src="/images/Boxxlogo.png"
-              alt="BlueBoxx"
+              src={user?.organization_icon_logo || user?.organization_logo || '/images/Boxxlogo.png'}
+              alt={user?.organization || 'Company Logo'}
               className="w-8 h-8 object-contain shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/images/Boxxlogo.png';
+              }}
             />
           ) : (
             <div className="flex flex-col min-w-0">
               <img
-                src="/images/logoblue.png"
-                alt="BlueBoxx DA Pvt. Ltd."
-                className="h-7 w-auto object-contain object-left"
+                src={user?.organization_logo || '/images/logoblue.png'}
+                alt={user?.organization || 'Company Logo'}
+                className="h-7 w-auto max-w-[170px] object-contain object-left"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/images/logoblue.png';
+                }}
               />
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1.5 truncate">
                 {portalTitleMap[activeNamespace]}

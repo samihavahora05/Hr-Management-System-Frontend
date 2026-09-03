@@ -8,6 +8,7 @@ import { fetchApi } from '@/lib/api';
 import { LogOut, Search, Settings, CheckCircle2, Clock, Bell } from '@/components/ui/Icon';
 import { Toast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
+import { getCurrentLocation } from '@/lib/geolocation';
 
 function formatTimeDisplay(timeStr?: string | null): string {
   if (!timeStr) return '';
@@ -158,15 +159,23 @@ export function Topbar() {
     setCheckingIn(true);
     try {
       const clientTime = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
+      const coords = await getCurrentLocation().catch((err: any) => {
+        throw new Error(err.message || 'Office location verification required: Please allow GPS location in your browser.');
+      });
+
       const res = await fetchApi('/attendance/check-in', {
         method: 'POST',
-        body: JSON.stringify({ time: clientTime }),
+        body: JSON.stringify({
+          time: clientTime,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        }),
       });
       const timeFormatted = formatTimeDisplay(res.attendance?.check_in) || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setToastMessage(res.message || `Checked in successfully at ${timeFormatted}`);
       setTodayAttendance(res.attendance);
     } catch (err: any) {
-      setToastMessage(err.message || 'Already checked in today');
+      setToastMessage(err.message || 'Check-in failed: You must be at the office premises.');
     } finally {
       setCheckingIn(false);
     }

@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/Badge';
 import { fetchApi } from '@/lib/api';
 import { exportToCSV } from '@/lib/export';
 import { Toast } from '@/components/ui/Toast';
-import { Download, Plus, Edit3, X, Clock } from '@/components/ui/Icon';
+import { Download, Plus, Edit3, X, Clock, CalendarDays } from '@/components/ui/Icon';
+import { MonthlyAttendanceReportView } from '@/components/reports/MonthlyAttendanceReportView';
+import { getCurrentLocation } from '@/lib/geolocation';
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return 'N/A';
@@ -61,6 +63,7 @@ export default function AdminAttendancePage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late' | 'on_leave' | 'absent'>('all');
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,6 +75,73 @@ export default function AdminAttendancePage() {
   const [formStatus, setFormStatus] = useState<string>('present');
   const [formNotes, setFormNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Geofence Modal State
+  const [isGeofenceModalOpen, setIsGeofenceModalOpen] = useState(false);
+  const [geofenceName, setGeofenceName] = useState('Main Office Headquarters');
+  const [geofenceAddress, setGeofenceAddress] = useState('Bandra Kurla Complex, Mumbai, Maharashtra 400051');
+  const [geofenceLat, setGeofenceLat] = useState('19.0657');
+  const [geofenceLng, setGeofenceLng] = useState('72.8687');
+  const [geofenceRadius, setGeofenceRadius] = useState('300');
+  const [geofenceEnabled, setGeofenceEnabled] = useState(true);
+  const [savingGeofence, setSavingGeofence] = useState(false);
+  const [fetchingGps, setFetchingGps] = useState(false);
+
+  const handleOpenGeofenceModal = async () => {
+    try {
+      const res = await fetchApi('/attendance/office-location');
+      if (res?.office_location) {
+        const loc = res.office_location;
+        setGeofenceName(loc.name || 'Main Office Headquarters');
+        setGeofenceAddress(loc.address || '');
+        setGeofenceLat(String(loc.latitude || '19.0657'));
+        setGeofenceLng(String(loc.longitude || '72.8687'));
+        setGeofenceRadius(String(loc.radius_meters || '300'));
+        setGeofenceEnabled(loc.enabled !== false);
+      }
+    } catch (err) {
+      // fallback
+    }
+    setIsGeofenceModalOpen(true);
+  };
+
+  const handleUseCurrentGps = async () => {
+    setFetchingGps(true);
+    try {
+      const coords = await getCurrentLocation();
+      setGeofenceLat(coords.latitude.toFixed(6));
+      setGeofenceLng(coords.longitude.toFixed(6));
+      setToastMessage('Fetched current device GPS coordinates successfully!');
+    } catch (err: any) {
+      setToastMessage(err.message || 'Could not fetch device GPS.');
+    } finally {
+      setFetchingGps(false);
+    }
+  };
+
+  const handleSaveGeofence = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingGeofence(true);
+    try {
+      const res = await fetchApi('/attendance/office-location', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: geofenceName,
+          address: geofenceAddress,
+          latitude: parseFloat(geofenceLat),
+          longitude: parseFloat(geofenceLng),
+          radius_meters: parseInt(geofenceRadius, 10),
+          enabled: geofenceEnabled,
+        }),
+      });
+      setToastMessage(res?.message || 'Office geofence updated successfully!');
+      setIsGeofenceModalOpen(false);
+    } catch (err: any) {
+      setToastMessage(err?.message || 'Failed to save office geofence.');
+    } finally {
+      setSavingGeofence(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -196,6 +266,27 @@ export default function AdminAttendancePage() {
     return a.status === statusFilter && itemDate === todayStr;
   });
 
+  if (viewMode === 'monthly') {
+    return (
+      <PortalLayout namespace="admin">
+        <PageHeader
+          title="Admin Monthly Attendance Register & Archive"
+          description="System-wide monthly attendance logs, employee performance ratings, working hours, and persistent stored reports"
+          action={
+            <button
+              onClick={() => setViewMode('daily')}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <Clock className="w-4 h-4" />
+              <span>Return to Daily Attendance Register</span>
+            </button>
+          }
+        />
+        <MonthlyAttendanceReportView onNavigateBack={() => setViewMode('daily')} />
+      </PortalLayout>
+    );
+  }
+
   return (
     <PortalLayout namespace="admin">
       <PageHeader
@@ -203,6 +294,21 @@ export default function AdminAttendancePage() {
         description="System-wide attendance logs, check-in/out timestamps, punctuality stats, and manual corrections"
         action={
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleOpenGeofenceModal}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Configure Office GPS Coordinates & Geofencing Radius"
+            >
+              <span>📍 Office Geofence</span>
+            </button>
+            <button
+              onClick={() => setViewMode('monthly')}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+              title="Open monthly attendance report with employee performance ratings and persistent storage"
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span>Monthly Report & Storage</span>
+            </button>
             <button
               onClick={() => handleOpenModal()}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
@@ -523,6 +629,178 @@ export default function AdminAttendancePage() {
                   className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* OFFICE GEOFENCE SETTINGS MODAL */}
+      {isGeofenceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-900 to-indigo-950 text-white">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📍</span>
+                <div>
+                  <h3 className="font-black text-sm text-white">Office Location & Geofence</h3>
+                  <p className="text-[11px] text-slate-300">
+                    Employees can only clock in when physically within this perimeter
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsGeofenceModalOpen(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveGeofence} className="p-6 space-y-4">
+              {/* Geofence Active Toggle */}
+              <div className="flex items-center justify-between p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+                <div>
+                  <h4 className="text-xs font-bold text-indigo-950">Enforce Office Location Geofence</h4>
+                  <p className="text-[11px] text-indigo-700">Block clock-in if employee is outside the allowed office radius</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={geofenceEnabled}
+                    onChange={(e) => setGeofenceEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+
+              {/* Office Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Office Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={geofenceName}
+                  onChange={(e) => setGeofenceName(e.target.value)}
+                  placeholder="e.g. Main Office Headquarters"
+                  className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                />
+              </div>
+
+              {/* Office Address */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Office Address
+                </label>
+                <input
+                  type="text"
+                  value={geofenceAddress}
+                  onChange={(e) => setGeofenceAddress(e.target.value)}
+                  placeholder="e.g. Bandra Kurla Complex, Mumbai, Maharashtra"
+                  className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                />
+              </div>
+
+              {/* GPS Coordinates & Fetch Button */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    GPS Coordinates (Latitude & Longitude) <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentGps}
+                    disabled={fetchingGps}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline cursor-pointer disabled:opacity-50"
+                  >
+                    <span>{fetchingGps ? '📍 Fetching GPS...' : '📍 Use My Current Location'}</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-0.5">Latitude</span>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={geofenceLat}
+                      onChange={(e) => setGeofenceLat(e.target.value)}
+                      placeholder="19.065700"
+                      className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 font-mono text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-0.5">Longitude</span>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={geofenceLng}
+                      onChange={(e) => setGeofenceLng(e.target.value)}
+                      placeholder="72.868700"
+                      className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 font-mono text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Allowed Radius in Meters */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Allowed Geofence Radius (Meters) <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-xs font-extrabold text-indigo-700">{geofenceRadius} meters</span>
+                </div>
+                <input
+                  type="number"
+                  min="20"
+                  max="10000"
+                  required
+                  value={geofenceRadius}
+                  onChange={(e) => setGeofenceRadius(e.target.value)}
+                  className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-2 font-mono text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold">Quick Presets:</span>
+                  {[100, 200, 300, 500, 1000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setGeofenceRadius(String(preset))}
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border transition-all ${
+                        geofenceRadius === String(preset)
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {preset}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsGeofenceModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingGeofence}
+                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {savingGeofence ? 'Saving Settings...' : 'Save Geofence'}
                 </button>
               </div>
             </form>

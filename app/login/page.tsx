@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, getRoleDefaultRoute } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
@@ -22,8 +22,21 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Dynamic Company Branding
+  const [companyLogo, setCompanyLogo] = useState<string>('/images/logoblue.png');
+  const [companyName, setCompanyName] = useState<string>('BlueBoxx DA Pvt. Ltd.');
+
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    fetchApi('/organization/branding')
+      .then((res) => {
+        if (res?.logo_url) setCompanyLogo(res.logo_url);
+        if (res?.organization_name) setCompanyName(res.organization_name);
+      })
+      .catch(() => null);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +64,10 @@ export default function LoginPage() {
       <header className="w-full max-w-md mx-auto flex items-center justify-between pt-2 sm:pt-4">
         <div className="flex items-center gap-2">
           <img
-            src="/images/logoblue.png"
-            alt="BlueBoxx DA Pvt. Ltd."
-            className="h-8 sm:h-9 w-auto object-contain"
+            src={companyLogo}
+            alt={companyName}
+            className="h-8 sm:h-9 w-auto max-w-[200px] object-contain"
+            onError={() => setCompanyLogo('/images/logoblue.png')}
           />
         </div>
         <span className="text-[11px] font-medium text-slate-400">v4.2 Enterprise</span>
