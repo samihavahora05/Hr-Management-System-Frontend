@@ -220,9 +220,18 @@ export default function EmployeeAttendancePage() {
             )}
 
             {hasCheckedOut ? (
-              <div className="px-3 py-1.5 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 text-xs">
+              <div className="px-3 py-1.5 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 text-xs select-none" title={todayAttendance.notes || 'Attendance checked out'}>
                 <CheckCircle2 className="w-4 h-4 text-slate-500" />
                 <span>Out: {formatTime(todayAttendance.check_out)}</span>
+                {todayAttendance.notes?.includes('Auto check-out') && (
+                  <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
+                )}
+              </div>
+            ) : hasCheckedIn && (new Date().getDay() === 6 ? new Date().getHours() >= 14 : new Date().getHours() >= 18) ? (
+              <div className="px-3 py-1.5 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 text-xs select-none" title="Shift ended. Auto check-out triggered.">
+                <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                <span>Out: {new Date().getDay() === 6 ? '02:00 PM' : '06:00 PM'}</span>
+                <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
               </div>
             ) : (
               <button

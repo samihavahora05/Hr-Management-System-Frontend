@@ -271,7 +271,7 @@ export function EmployeeDashboard({
             <Clock className="w-5 h-5" />
             <span>{checkingIn ? 'Clocking In...' : 'Clock In Now'}</span>
           </button>
-        ) : !isCheckedOut ? (
+        ) : (!isCheckedOut && !(new Date().getDay() === 6 ? new Date().getHours() >= 14 : new Date().getHours() >= 18)) ? (
           <button
             onClick={onCheckOut}
             disabled={checkingIn}
@@ -281,9 +281,11 @@ export function EmployeeDashboard({
             <span>{checkingIn ? 'Clocking Out...' : 'Clock Out'}</span>
           </button>
         ) : (
-          <div className="p-4 bg-slate-100 text-slate-600 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-sm">
+          <div className="p-4 bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-sm select-none">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <span>Shift Completed Today</span>
+            <span>
+              Shift Completed Today {isCheckedOut ? `(${formatTimeDisplay(myTodayAttendance?.check_out)})` : (new Date().getDay() === 6 ? '(02:00 PM Auto)' : '(06:00 PM Auto)')}
+            </span>
           </div>
         )}
       </div>
