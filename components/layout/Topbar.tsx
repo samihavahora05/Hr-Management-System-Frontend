@@ -166,22 +166,25 @@ export function Topbar() {
     try {
       const clientTime = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
       const coords = await getCurrentLocation().catch((err: any) => {
-        throw new Error(err.message || 'Office location verification required: Please allow GPS location in your browser.');
+        console.warn('Geolocation notice:', err.message);
+        return null;
       });
+
+      const payload: any = { time: clientTime };
+      if (coords?.latitude !== undefined && coords?.longitude !== undefined) {
+        payload.latitude = coords.latitude;
+        payload.longitude = coords.longitude;
+      }
 
       const res = await fetchApi('/attendance/check-in', {
         method: 'POST',
-        body: JSON.stringify({
-          time: clientTime,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }),
+        body: JSON.stringify(payload),
       });
       const timeFormatted = formatTimeDisplay(res.attendance?.check_in) || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setToastMessage(res.message || `Checked in successfully at ${timeFormatted}`);
       setTodayAttendance(res.attendance);
     } catch (err: any) {
-      setToastMessage(err.message || 'Check-in failed: You must be at the office premises.');
+      setToastMessage(err.message || 'Check-in failed');
     } finally {
       setCheckingIn(false);
     }

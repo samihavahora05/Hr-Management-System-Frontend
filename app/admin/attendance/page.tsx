@@ -82,7 +82,7 @@ export default function AdminAttendancePage() {
   const [geofenceAddress, setGeofenceAddress] = useState('SF 02, INDIA BULLS MEGA MALL, Dinesh Mill Rd, near Swami Vivekananda Railway Over Bridge, Anand Nagar, Akota, Vadodara, Gujarat 390022');
   const [geofenceLat, setGeofenceLat] = useState('22.2955');
   const [geofenceLng, setGeofenceLng] = useState('73.1764');
-  const [geofenceRadius, setGeofenceRadius] = useState('2000');
+  const [geofenceRadius, setGeofenceRadius] = useState('500');
   const [geofenceEnabled, setGeofenceEnabled] = useState(true);
   const [savingGeofence, setSavingGeofence] = useState(false);
   const [fetchingGps, setFetchingGps] = useState(false);
@@ -96,7 +96,7 @@ export default function AdminAttendancePage() {
         setGeofenceAddress(loc.address || '');
         setGeofenceLat(String(loc.latitude || '22.2955'));
         setGeofenceLng(String(loc.longitude || '73.1764'));
-        setGeofenceRadius(String(loc.radius_meters || '2000'));
+        setGeofenceRadius(String(loc.radius_meters || '500'));
         setGeofenceEnabled(loc.enabled !== false);
       }
     } catch (err) {
@@ -111,7 +111,8 @@ export default function AdminAttendancePage() {
       const coords = await getCurrentLocation();
       setGeofenceLat(coords.latitude.toFixed(6));
       setGeofenceLng(coords.longitude.toFixed(6));
-      setToastMessage('Fetched current device GPS coordinates successfully!');
+      const srcText = coords.source === 'ip' ? ' (approximate via network/IP)' : ' via device GPS';
+      setToastMessage(`Current location coordinates fetched${srcText}!`);
     } catch (err: any) {
       setToastMessage(err.message || 'Could not fetch device GPS.');
     } finally {
@@ -769,7 +770,7 @@ export default function AdminAttendancePage() {
                 />
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] text-slate-400 font-bold">Quick Presets:</span>
-                  {[300, 500, 1000, 2000, 3000].map((preset) => (
+                  {[100, 200, 300, 500, 1000].map((preset) => (
                     <button
                       key={preset}
                       type="button"

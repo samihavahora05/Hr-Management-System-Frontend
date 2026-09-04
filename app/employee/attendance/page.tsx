@@ -119,21 +119,24 @@ export default function EmployeeAttendancePage() {
     try {
       const clientTime = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
       const coords = await getCurrentLocation().catch((err: any) => {
-        throw new Error(err.message || 'Office location verification required: Please allow GPS location in your browser.');
+        console.warn('Geolocation notice:', err.message);
+        return null;
       });
+
+      const payload: any = { time: clientTime };
+      if (coords?.latitude !== undefined && coords?.longitude !== undefined) {
+        payload.latitude = coords.latitude;
+        payload.longitude = coords.longitude;
+      }
 
       const res = await fetchApi('/attendance/check-in', {
         method: 'POST',
-        body: JSON.stringify({
-          time: clientTime,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }),
+        body: JSON.stringify(payload),
       });
       setToastMessage(res.message || 'Checked in successfully!');
       await loadData();
     } catch (err: any) {
-      setToastMessage(err.message || 'Check-in failed: You must be at the office premises to clock in.');
+      setToastMessage(err.message || 'Check-in failed');
     } finally {
       setCheckingIn(false);
     }
@@ -302,7 +305,7 @@ export default function EmployeeAttendancePage() {
           {officeLocation && (
             <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-lg text-indigo-900 text-[11px] font-semibold">
               <span>📍</span>
-              <span><strong>Office Geofence:</strong> {officeLocation.name} ({officeLocation.radius_meters}m)</span>
+              <span><strong>Office Geofence:</strong> {officeLocation.name} ({officeLocation.radius_meters || 500}m allowed radius)</span>
             </div>
           )}
         </div>

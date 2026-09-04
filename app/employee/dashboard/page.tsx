@@ -44,19 +44,22 @@ export default function EmployeeDashboardPage() {
     setCheckingIn(true);
     try {
       const coords = await getCurrentLocation().catch((err: any) => {
-        throw new Error(err.message || 'Office location verification required: Please allow GPS location in your browser.');
+        console.warn('Geolocation notice:', err.message);
+        return null;
       });
+      const payload: any = {};
+      if (coords?.latitude !== undefined && coords?.longitude !== undefined) {
+        payload.latitude = coords.latitude;
+        payload.longitude = coords.longitude;
+      }
       const res = await fetchApi('/attendance/check-in', {
         method: 'POST',
-        body: JSON.stringify({
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }),
+        body: JSON.stringify(payload),
       });
       setToastMessage(res.message || 'Checked in successfully!');
       await loadData();
     } catch (err: any) {
-      setToastMessage(err.message || 'Check-in failed: You must be at the office premises to clock in.');
+      setToastMessage(err.message || 'Check-in failed');
     } finally {
       setCheckingIn(false);
     }
