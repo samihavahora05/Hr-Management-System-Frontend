@@ -52,73 +52,60 @@ async function getIpLocation(): Promise<Coordinates> {
   throw new Error('Could not determine location via IP or GPS.');
 }
 
-/**
- * Get accurate current location with automatic graceful fallbacks.
- */
 export async function getCurrentLocation(): Promise<Coordinates> {
-  // Check if browser geolocation is supported and accessible
-  if (typeof window !== 'undefined' && navigator.geolocation) {
-    // Tier 1: Try high accuracy GPS (5s timeout)
+  if (typeof window === 'undefined' || !navigator.geolocation) {
+    throw new Error('Location services are not supported by your device or browser. Please use a device with location/GPS support.');
+  }
+
+  // Tier 1: Try high accuracy GPS (6s timeout)
+  try {
+    const highAccPos = await new Promise<Coordinates>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          source: 'gps',
+        }),
+        (err) => reject(err),
+        {
+          enableHighAccuracy: true,
+          timeout: 6000,
+          maximumAge: 0,
+        }
+      );
+    });
+    return highAccPos;
+  } catch (err: any) {
+    if (err?.code === 1) { // PERMISSION_DENIED
+      throw new Error('Location permission denied: You must allow browser location/GPS access to verify you are within 500m of the office.');
+    }
+
+    // Tier 2: Try standard device network/Wi-Fi positioning (8s timeout)
     try {
-      const highAccPos = await new Promise<Coordinates>((resolve, reject) => {
+      const stdPos = await new Promise<Coordinates>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
           (pos) => resolve({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
-            source: 'gps',
+            source: 'browser',
           }),
           (err) => reject(err),
           {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0,
+            enableHighAccuracy: false,
+            timeout: 8000,
+            maximumAge: 60000,
           }
         );
       });
-      return highAccPos;
-    } catch (err: any) {
-      // If user explicitly denied permission, don't fail silently without trying IP fallback or giving clear feedback
-      if (err?.code === 1) { // PERMISSION_DENIED
-        try {
-          return await getIpLocation();
-        } catch {
-          throw new Error('Location permission denied: Please allow location access in your browser settings.');
-        }
+      return stdPos;
+    } catch (stdErr: any) {
+      if (stdErr?.code === 1) {
+        throw new Error('Location permission denied: Please allow location access in your browser settings to clock in.');
       }
-
-      // Tier 2: Try standard accuracy / cached position (8s timeout)
-      try {
-        const stdPos = await new Promise<Coordinates>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve({
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              source: 'browser',
-            }),
-            (err) => reject(err),
-            {
-              enableHighAccuracy: false,
-              timeout: 8000,
-              maximumAge: 300000, // 5 min cached
-            }
-          );
-        });
-        return stdPos;
-      } catch {
-        // Fall through to IP fallback
-      }
+      throw new Error('Unable to determine your GPS location. Please turn on device Location Services and try again.');
     }
-  }
-
-  // Tier 3: IP Geolocation Fallback
-  try {
-    return await getIpLocation();
-  } catch (err: any) {
-    throw new Error(
-      'Unable to retrieve your location. Please ensure location services are enabled on your device or browser.'
-    );
   }
 }
 
