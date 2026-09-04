@@ -294,37 +294,41 @@ export default function AdminAttendancePage() {
         title="Admin Attendance Register"
         description="System-wide attendance logs, check-in/out timestamps, punctuality stats, and manual corrections"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleOpenGeofenceModal}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Configure Office GPS Coordinates & Geofencing Radius"
+              className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-95 font-bold text-xs rounded-xl shadow-2xs inline-flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer"
+              title="Configure Office GPS Coordinates & 500m Geofencing Radius"
             >
-              <span>📍 Office Geofence</span>
+              <span className="text-xs">📍</span>
+              <span>Office Geofence</span>
             </button>
+
             <button
               onClick={() => setViewMode('monthly')}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+              className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-95 font-bold text-xs rounded-xl shadow-2xs inline-flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer"
               title="Open monthly attendance report with employee performance ratings and persistent storage"
             >
-              <CalendarDays className="w-4 h-4" />
-              <span>Monthly Report & Storage</span>
+              <CalendarDays className="w-4 h-4 text-purple-600" />
+              <span>Monthly Report</span>
             </button>
+
+            <button
+              onClick={handleExportExcel}
+              className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-95 font-bold text-xs rounded-xl shadow-2xs inline-flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer"
+              title="Export attendance records to Excel CSV"
+            >
+              <Download className="w-4 h-4 text-emerald-600" />
+              <span>Export Excel</span>
+            </button>
+
             <button
               onClick={() => handleOpenModal()}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer"
               title="Add or edit user attendance record"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Manual Attendance Entry</span>
-            </button>
-            <button
-              onClick={handleExportExcel}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
-              title="Export attendance records to Excel CSV"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export to Excel</span>
+              <span>+ Manual Entry</span>
             </button>
           </div>
         }
