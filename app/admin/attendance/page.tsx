@@ -80,8 +80,8 @@ export default function AdminAttendancePage() {
   const [isGeofenceModalOpen, setIsGeofenceModalOpen] = useState(false);
   const [geofenceName, setGeofenceName] = useState('Main Office Headquarters');
   const [geofenceAddress, setGeofenceAddress] = useState('SF 02, INDIA BULLS MEGA MALL, Dinesh Mill Rd, near Swami Vivekananda Railway Over Bridge, Anand Nagar, Akota, Vadodara, Gujarat 390022');
-  const [geofenceLat, setGeofenceLat] = useState('22.2955');
-  const [geofenceLng, setGeofenceLng] = useState('73.1764');
+  const [geofenceLat, setGeofenceLat] = useState('22.3039');
+  const [geofenceLng, setGeofenceLng] = useState('73.1783');
   const [geofenceRadius, setGeofenceRadius] = useState('500');
   const [geofenceEnabled, setGeofenceEnabled] = useState(true);
   const [savingGeofence, setSavingGeofence] = useState(false);
@@ -94,8 +94,8 @@ export default function AdminAttendancePage() {
         const loc = res.office_location;
         setGeofenceName(loc.name || 'Main Office Headquarters');
         setGeofenceAddress(loc.address || '');
-        setGeofenceLat(String(loc.latitude || '22.2955'));
-        setGeofenceLng(String(loc.longitude || '73.1764'));
+        setGeofenceLat(String(loc.latitude || '22.3039'));
+        setGeofenceLng(String(loc.longitude || '73.1783'));
         setGeofenceRadius(String(loc.radius_meters || '500'));
         setGeofenceEnabled(loc.enabled !== false);
       }

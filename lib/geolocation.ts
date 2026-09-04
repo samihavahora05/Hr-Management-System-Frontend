@@ -71,7 +71,7 @@ export async function getCurrentLocation(): Promise<Coordinates> {
         {
           enableHighAccuracy: true,
           timeout: 6000,
-          maximumAge: 0,
+          maximumAge: 30000,
         }
       );
     });
