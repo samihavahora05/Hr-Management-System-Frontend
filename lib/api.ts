@@ -44,6 +44,8 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    headers['X-Auth-Token'] = token;
+    headers['X-Bearer-Token'] = token;
   }
 
   const primaryBase = getPrimaryApiBase();
@@ -76,10 +78,14 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
   if (!res.ok) {
     if (res.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      const isCriticalAuthRoute = endpoint.includes('/auth/me') || endpoint.includes('/auth/change-password');
+      // Only force redirect if critical auth state validation fails and user is not already on login
+      if (isCriticalAuthRoute) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     throw new Error(data.message || 'An error occurred while fetching data');
