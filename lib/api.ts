@@ -136,3 +136,49 @@ export async function downloadApiFile(endpoint: string, fallbackFilename = 'docu
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export async function fetchApiBlobUrl(endpoint: string): Promise<{ url: string; contentType: string; revoke: () => void }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+    headers['X-Auth-Token'] = token;
+    headers['X-Bearer-Token'] = token;
+  }
+
+  const primaryBase = getPrimaryApiBase();
+  const primaryUrl = buildApiUrl(primaryBase, endpoint);
+
+  let res: Response;
+  try {
+    res = await fetch(primaryUrl, { headers });
+  } catch (err) {
+    const fallbackBase = typeof window !== 'undefined' && window.location.origin
+      ? `${window.location.origin}/api`
+      : 'http://127.0.0.1:8000/api';
+
+    if (fallbackBase !== primaryBase) {
+      const fallbackUrl = buildApiUrl(fallbackBase, endpoint);
+      res = await fetch(fallbackUrl, { headers });
+    } else {
+      throw err;
+    }
+  }
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Failed to load document preview (HTTP ${res.status})`);
+  }
+
+  const contentType = res.headers.get('content-type') || 'application/pdf';
+  const blob = await res.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+
+  return {
+    url: objectUrl,
+    contentType,
+    revoke: () => window.URL.revokeObjectURL(objectUrl),
+  };
+}
+

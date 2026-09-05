@@ -7,8 +7,8 @@ import { TablePrimitive } from '@/components/ui/TablePrimitive';
 import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
-import { fetchApi, downloadApiFile } from '@/lib/api';
-import { FileText, Download, Plus, Upload, Eye, X, Trash2, Users, Search, Filter } from '@/components/ui/Icon';
+import { fetchApi, downloadApiFile, fetchApiBlobUrl } from '@/lib/api';
+import { FileText, Download, Plus, Upload, Eye, X, Trash2, Users, Search, Filter, ExternalLink, RefreshCw } from '@/components/ui/Icon';
 
 interface DocumentVaultManagerProps {
   namespace: 'admin' | 'hr' | 'manager' | 'team_leader' | 'employee';
@@ -40,8 +40,12 @@ export function DocumentVaultManager({
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Document Preview Modal
+  // Document Preview Modal State
   const [previewDoc, setPreviewDoc] = useState<any | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewContentType, setPreviewContentType] = useState<string>('');
 
   const isElevatedRole = ['admin', 'hr', 'manager', 'team_leader'].includes(namespace);
 
@@ -51,6 +55,50 @@ export function DocumentVaultManager({
       loadEmployees();
     }
   }, [user?.id, namespace]);
+
+  // Load document blob preview whenever previewDoc is opened
+  useEffect(() => {
+    let active = true;
+    let revokeFn: (() => void) | null = null;
+
+    if (!previewDoc) {
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl);
+      }
+      setPreviewBlobUrl(null);
+      setPreviewLoading(false);
+      setPreviewError(null);
+      setPreviewContentType('');
+      return;
+    }
+
+    setPreviewLoading(true);
+    setPreviewError(null);
+
+    fetchApiBlobUrl(`/documents/${previewDoc.id}/view`)
+      .then((res) => {
+        if (!active) {
+          res.revoke();
+          return;
+        }
+        revokeFn = res.revoke;
+        setPreviewBlobUrl(res.url);
+        setPreviewContentType(res.contentType || '');
+        setPreviewLoading(false);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setPreviewError(err.message || 'Unable to preview file directly. Please use the download option below.');
+        setPreviewLoading(false);
+      });
+
+    return () => {
+      active = false;
+      if (revokeFn) {
+        revokeFn();
+      }
+    };
+  }, [previewDoc?.id]);
 
   const loadDocuments = async () => {
     setLoading(true);
@@ -536,52 +584,169 @@ export function DocumentVaultManager({
       </Modal>
 
       {/* DOCUMENT PREVIEW MODAL */}
-      <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc?.title || ''}`}>
-        <div className="space-y-4">
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+      <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc?.title || ''}`} maxWidth="5xl">
+        <div className="space-y-3">
+          {/* Top metadata & action bar */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="font-extrabold text-slate-900 text-sm">{previewDoc?.title}</p>
-              <p className="text-xs text-slate-500 capitalize">
-                Category: {previewDoc?.type === 'daily_report' ? 'Daily Work Report' : previewDoc?.type}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-slate-900 text-sm">{previewDoc?.title}</span>
+                <span className="px-2 py-0.5 bg-[#0f365e]/10 text-[#0f365e] font-bold text-[10px] rounded-md capitalize">
+                  {previewDoc?.type === 'daily_report' ? 'Daily Work Report' : previewDoc?.type?.replace('_', ' ')}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 Uploaded by: <span className="font-bold text-slate-700">{previewDoc?.user?.name || 'Employee'}</span>
+                {previewDoc?.created_at && (
+                  <span className="ml-2 text-slate-400">
+                    • {new Date(previewDoc.created_at).toLocaleDateString()} {new Date(previewDoc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
               </p>
             </div>
-            <button
-              onClick={() => handleDownloadDocument(previewDoc)}
-              className="px-3.5 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download</span>
-            </button>
-          </div>
 
-          <div className="text-center p-8 space-y-3 bg-slate-50 rounded-xl border border-slate-200">
-            <FileText className="w-12 h-12 text-[#0f365e] mx-auto" />
-            <p className="text-sm font-extrabold text-slate-800">{previewDoc?.title}</p>
-            <p className="text-xs text-slate-500">Document is securely stored on company disk storage</p>
-            <div className="flex items-center justify-center gap-2 pt-2">
+            <div className="flex items-center gap-2">
+              {previewBlobUrl && (
+                <button
+                  onClick={() => window.open(previewBlobUrl, '_blank')}
+                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-lg border border-slate-300 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                  title="Open in new window"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Open in Tab</span>
+                </button>
+              )}
               <button
                 onClick={() => handleDownloadDocument(previewDoc)}
-                className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
               >
-                <Download className="w-4 h-4" />
-                <span>Download & Open</span>
+                <Download className="w-3.5 h-3.5" />
+                <span>Download</span>
               </button>
-              <button
-                onClick={() => {
-                  const id = previewDoc.id;
-                  const title = previewDoc.title;
-                  setPreviewDoc(null);
-                  handleDeleteDocument(id, title);
-                }}
-                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 shadow-xs cursor-pointer inline-flex items-center gap-1.5"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete File</span>
-              </button>
+              {isElevatedRole && (
+                <button
+                  onClick={() => {
+                    const id = previewDoc.id;
+                    const title = previewDoc.title;
+                    setPreviewDoc(null);
+                    handleDeleteDocument(id, title);
+                  }}
+                  className="px-2.5 py-1.5 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-lg border border-transparent hover:border-rose-200 cursor-pointer transition-colors"
+                  title="Delete File"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+          </div>
+
+          {/* Inline Document Preview Box */}
+          <div className="w-full h-[65vh] min-h-[450px] bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-center items-center relative">
+            {previewLoading && (
+              <div className="flex flex-col items-center gap-2 p-8 text-center animate-pulse">
+                <div className="w-10 h-10 border-4 border-[#0f365e] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-xs font-bold text-slate-700">Loading document preview...</p>
+                <p className="text-[11px] text-slate-400">Fetching secure stream from vault</p>
+              </div>
+            )}
+
+            {!previewLoading && previewError && (
+              <div className="text-center p-8 space-y-3 max-w-md bg-white rounded-xl border border-slate-200 shadow-xs">
+                <FileText className="w-10 h-10 text-amber-500 mx-auto" />
+                <p className="text-xs font-extrabold text-slate-800">Preview Notice</p>
+                <p className="text-[11px] text-slate-500">{previewError}</p>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setPreviewError(null);
+                      setPreviewLoading(true);
+                      fetchApiBlobUrl(`/documents/${previewDoc.id}/view`)
+                        .then((res) => {
+                          setPreviewBlobUrl(res.url);
+                          setPreviewContentType(res.contentType || '');
+                          setPreviewLoading(false);
+                        })
+                        .catch((err) => {
+                          setPreviewError(err.message || 'Unable to preview file.');
+                          setPreviewLoading(false);
+                        });
+                    }}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry</span>
+                  </button>
+                  <button
+                    onClick={() => handleDownloadDocument(previewDoc)}
+                    className="px-4 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download File</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!previewLoading && !previewError && previewBlobUrl && (
+              (() => {
+                const ext = (previewDoc?.file_url ? previewDoc.file_url.split('.').pop() : '').toLowerCase();
+                const isPdf = ext === 'pdf' || previewContentType.includes('pdf');
+                const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext) || previewContentType.includes('image');
+                const isText = ['txt', 'csv', 'log', 'json'].includes(ext) || previewContentType.includes('text');
+
+                if (isPdf) {
+                  return (
+                    <iframe
+                      src={`${previewBlobUrl}#toolbar=1&navpanes=0`}
+                      className="w-full h-full rounded-xl bg-white border-0"
+                      title={previewDoc?.title || 'PDF Preview'}
+                    />
+                  );
+                }
+
+                if (isImage) {
+                  return (
+                    <div className="w-full h-full flex items-center justify-center p-4 bg-slate-900/5 overflow-auto">
+                      <img
+                        src={previewBlobUrl}
+                        alt={previewDoc?.title || 'Document Image'}
+                        className="max-h-full max-w-full object-contain rounded-lg shadow-md bg-white"
+                      />
+                    </div>
+                  );
+                }
+
+                if (isText) {
+                  return (
+                    <iframe
+                      src={previewBlobUrl}
+                      className="w-full h-full p-4 bg-white font-mono text-xs overflow-auto"
+                      title={previewDoc?.title || 'Text Preview'}
+                    />
+                  );
+                }
+
+                // Office Document / Excel / Word fallback
+                return (
+                  <div className="text-center p-8 space-y-3 max-w-md bg-white rounded-xl border border-slate-200 shadow-xs">
+                    <FileText className="w-12 h-12 text-[#0f365e] mx-auto" />
+                    <p className="text-sm font-extrabold text-slate-800">{previewDoc?.title}</p>
+                    <p className="text-xs text-slate-500">
+                      This is an Office document (<span className="uppercase font-bold">{ext || 'file'}</span>). Browsers do not render native binary Office files directly.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleDownloadDocument(previewDoc)}
+                        className="px-5 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download & Open in Office</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
       </Modal>
