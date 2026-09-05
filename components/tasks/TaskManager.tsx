@@ -877,19 +877,34 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                           setSelectedTask(task);
                           setIsDetailModalOpen(true);
                         }}
-                        className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-2.5 group"
+                        className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-2.5 group relative"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] border capitalize ${getPriorityBadge(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-semibold capitalize">
-                            {task.category}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] border capitalize ${getPriorityBadge(
+                                task.priority
+                              )}`}
+                            >
+                              {task.priority}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-semibold capitalize">
+                              {task.category}
+                            </span>
+                          </div>
+
+                          {(isAdminMode || !isEmployeeMode || task.assigner_id === user?.id) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTask(task.id);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                              title="Delete task"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
 
                         <h5 className="font-bold text-slate-900 text-xs group-hover:text-[#0f365e] transition-colors leading-snug">
