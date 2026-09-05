@@ -54,19 +54,19 @@ export function ConfirmModal({
   }[variant];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6">
-          <div className="flex items-start gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${variantStyles.iconBg}`}>
+        <div className="p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${variantStyles.iconBg}`}>
               {variantStyles.icon}
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-black text-slate-900 tracking-tight leading-snug">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug">
                 {title}
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
@@ -76,24 +76,25 @@ export function ConfirmModal({
 
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              aria-label="Close dialog"
+              className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {details && (
-            <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <div className="mt-4 p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs overflow-x-auto">
               {details}
             </div>
           )}
 
-          <div className="mt-6 flex items-center justify-end gap-2.5">
+          <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5">
             <button
               type="button"
               disabled={loading}
               onClick={onClose}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors"
+              className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer transition-colors text-center"
             >
               {cancelText}
             </button>
@@ -101,7 +102,7 @@ export function ConfirmModal({
               type="button"
               disabled={loading}
               onClick={onConfirm}
-              className={`px-5 py-2.5 text-xs font-bold rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2 ${variantStyles.btn}`}
+              className={`w-full sm:w-auto px-5 py-2.5 text-xs font-bold rounded-xl cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2 ${variantStyles.btn}`}
             >
               {loading ? (
                 <>

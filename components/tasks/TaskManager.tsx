@@ -842,7 +842,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
         </div>
       ) : (
         /* KANBAN BOARD VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 min-w-0 w-full">
           {[
             { id: 'todo', title: 'To Do', color: 'border-amber-400 bg-amber-50/30' },
             { id: 'in_progress', title: 'In Progress', color: 'border-indigo-400 bg-indigo-50/30' },
@@ -854,7 +854,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
             return (
               <div
                 key={column.id}
-                className="bg-slate-50/70 p-3 rounded-xl border border-slate-200 flex flex-col h-full min-h-[400px]"
+                className="bg-slate-50/70 p-3 rounded-xl border border-slate-200 flex flex-col h-full min-h-[300px] sm:min-h-[400px] min-w-0"
               >
                 <div className={`p-2.5 mb-3 rounded-lg border ${column.color} flex items-center justify-between`}>
                   <h4 className="font-extrabold text-slate-800 text-xs">{column.title}</h4>

@@ -27,16 +27,21 @@ import {
   ListTodo,
   Sparkles,
   Receipt,
+  X,
 } from '@/components/ui/Icon';
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, token, logout } = useAuth();
-  const { isCollapsed, toggleSidebarCollapse } = useTheme();
-  const [showPortalMenu, setShowPortalMenu] = useState(false);
+  const { isCollapsed, toggleSidebarCollapse, isMobileMenuOpen, closeMobileMenu } = useTheme();
 
   const role = user?.role || 'employee';
+
+  // Automatically close mobile menu whenever route changes
+  useEffect(() => {
+    closeMobileMenu();
+  }, [pathname]);
 
   // Determine current active namespace from URL pathname
   let activeNamespace: 'admin' | 'hr' | 'manager' | 'team_leader' | 'employee' = 'employee';
@@ -48,16 +53,6 @@ export function Sidebar() {
   else {
     activeNamespace = (role as any) || 'employee';
   }
-
-  type PortalId = 'admin' | 'hr' | 'manager' | 'team_leader' | 'employee';
-  const allPortals: Array<{ id: PortalId; label: string; href: string }> = [
-    { id: 'admin', label: 'Admin Portal', href: '/admin/dashboard' },
-    { id: 'hr', label: 'HR Portal', href: '/hr/dashboard' },
-    { id: 'manager', label: 'Company Manager Portal', href: '/manager/dashboard' },
-    { id: 'team_leader', label: 'Team Leader Portal', href: '/team-leader/dashboard' },
-    { id: 'employee', label: 'Employee Portal', href: '/employee/dashboard' },
-  ];
-  const availablePortals = allPortals.filter((p) => canAccessNamespace(role, p.id));
 
   const portalTitleMap = {
     admin: 'ADMIN PORTAL',
@@ -87,7 +82,6 @@ export function Sidebar() {
       { label: 'Timesheets', href: '/timesheets', icon: Clock },
       { label: 'Assets', href: '/assets', icon: Building2 },
       { label: 'Helpdesk', href: '/helpdesk', icon: FileText },
-
       { label: 'Roles', href: '/admin/roles', icon: ShieldCheck },
       { label: 'Permissions', href: '/admin/permissions', icon: CheckSquare },
       { label: 'Organization', href: '/admin/organization', icon: Building2 },
@@ -186,18 +180,16 @@ export function Sidebar() {
     router.push('/login');
   };
 
-  return (
-    <aside
-      className={`bg-white border-r border-[#c3c6cf] text-slate-700 flex flex-col h-screen sticky top-0 shrink-0 z-20 transition-all duration-200 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
-        }`}
-    >
+  const renderNavContent = (isDrawer = false) => (
+    <>
       {/* BRAND & PORTAL HEADER */}
-      <div className={`p-4 border-b border-slate-100 flex items-center ${isCollapsed ? 'justify-center flex-col gap-2' : 'justify-between'}`}>
+      <div className={`p-4 border-b border-slate-100 flex items-center ${!isDrawer && isCollapsed ? 'justify-center flex-col gap-2' : 'justify-between'}`}>
         <Link
           href={`/${activeNamespace}/dashboard`}
+          onClick={() => isDrawer && closeMobileMenu()}
           className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity"
         >
-          {isCollapsed ? (
+          {!isDrawer && isCollapsed ? (
             <img
               src={user?.organization_icon_logo || user?.organization_logo || '/images/Boxxlogo.png'}
               alt={user?.organization || 'Company Logo'}
@@ -223,20 +215,31 @@ export function Sidebar() {
           )}
         </Link>
 
-        <button
-          onClick={toggleSidebarCollapse}
-          className="p-1.5 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`} />
-        </button>
+        {isDrawer ? (
+          <button
+            onClick={closeMobileMenu}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+            title="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        ) : (
+          <button
+            onClick={toggleSidebarCollapse}
+            className="p-1.5 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`} />
+          </button>
+        )}
       </div>
 
       {/* QUICK NEW LEAVE REQUEST BUTTON FOR EMPLOYEE / MANAGER / HR */}
-      {!isCollapsed && activeNamespace !== 'admin' && (
+      {(isDrawer || !isCollapsed) && activeNamespace !== 'admin' && (
         <div className="px-4 pt-4 pb-2">
           <Link
             href={`/${activeNamespace}/leave`}
+            onClick={() => isDrawer && closeMobileMenu()}
             className="w-full py-2.5 px-4 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -257,7 +260,8 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              title={isCollapsed ? (hasUnread ? `${item.label} (${unreadCount} unread)` : item.label) : undefined}
+              onClick={() => isDrawer && closeMobileMenu()}
+              title={!isDrawer && isCollapsed ? (hasUnread ? `${item.label} (${unreadCount} unread)` : item.label) : undefined}
               className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 group relative ${isActive
                 ? 'bg-slate-100 text-[#0f365e] font-bold border border-[#c3c6cf] shadow-2xs'
                 : 'text-slate-600 hover:text-[#0f365e] hover:bg-slate-50'
@@ -266,16 +270,16 @@ export function Sidebar() {
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative shrink-0">
                   <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[#0f365e]' : 'text-slate-400 group-hover:text-[#0f365e]'}`} />
-                  {isCollapsed && hasUnread && (
+                  {!isDrawer && isCollapsed && hasUnread && (
                     <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 bg-rose-600 text-white rounded-full text-[8px] font-black flex items-center justify-center shadow-xs animate-pulse">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </div>
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                {(isDrawer || !isCollapsed) && <span className="truncate">{item.label}</span>}
               </div>
 
-              {!isCollapsed && hasUnread && (
+              {(isDrawer || !isCollapsed) && hasUnread && (
                 <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 min-w-[20px] text-[10px] font-black text-white bg-rose-600 rounded-full shadow-xs animate-pulse">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
@@ -291,7 +295,7 @@ export function Sidebar() {
           <div className="w-7 h-7 rounded-full bg-[#0f365e] text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
             {user?.name ? user.name[0] : 'U'}
           </div>
-          {!isCollapsed && (
+          {(isDrawer || !isCollapsed) && (
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-bold text-slate-900 truncate">{user?.name || 'User'}</p>
               <p className="text-[9px] text-slate-500 truncate capitalize">{user?.role_display || user?.role || 'Employee'}</p>
@@ -299,7 +303,7 @@ export function Sidebar() {
           )}
         </div>
 
-        {!isCollapsed && (
+        {(isDrawer || !isCollapsed) && (
           <button
             onClick={handleLogout}
             title="Sign Out"
@@ -309,6 +313,34 @@ export function Sidebar() {
           </button>
         )}
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* DESKTOP SIDEBAR (Sticky on md+ screens) */}
+      <aside
+        className={`hidden md:flex bg-white border-r border-[#c3c6cf] text-slate-700 flex-col h-screen sticky top-0 shrink-0 z-20 transition-all duration-200 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
+          }`}
+      >
+        {renderNavContent(false)}
+      </aside>
+
+      {/* MOBILE OFF-CANVAS DRAWER OVERLAY & PANEL */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+            onClick={closeMobileMenu}
+          />
+
+          {/* Drawer Content */}
+          <aside className="relative z-50 w-72 max-w-[85vw] bg-white text-slate-700 flex flex-col h-full shadow-2xl animate-in slide-in-from-left duration-200">
+            {renderNavContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

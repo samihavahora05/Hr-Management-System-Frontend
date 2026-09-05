@@ -164,56 +164,56 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
       ) : (
         <div className="space-y-6">
           {/* TOP KPI CARDS (CLICKABLE / INTERACTIVE) */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div
               onClick={() => setSelectedDept('all')}
-              className={`p-5 rounded-xl border transition-all cursor-pointer shadow-2xs space-y-1 ${
+              className={`p-4 sm:p-5 rounded-xl border transition-all cursor-pointer shadow-2xs space-y-1 min-w-0 ${
                 selectedDept === 'all' ? 'bg-[#0f365e] text-white border-[#0f365e]' : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center justify-between opacity-80">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider">Total Headcount</span>
-                <Users className="w-4 h-4" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider truncate">Total Headcount</span>
+                <Users className="w-4 h-4 shrink-0" />
               </div>
-              <p className="text-3xl font-extrabold">{totalHeadcount}</p>
-              <p className="text-[11px] opacity-75 font-medium">Click to reset department filter</p>
+              <p className="text-2xl sm:text-3xl font-extrabold">{totalHeadcount}</p>
+              <p className="text-[10px] sm:text-[11px] opacity-75 font-medium truncate">Click to reset dept filter</p>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-1">
+            <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-2xs space-y-1 min-w-0">
               <div className="flex items-center justify-between text-slate-400">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider">Active Workforce</span>
-                <Users className="w-4 h-4 text-emerald-600" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider truncate">Active Workforce</span>
+                <Users className="w-4 h-4 text-emerald-600 shrink-0" />
               </div>
-              <p className="text-3xl font-extrabold text-emerald-600">{activeEmployees}</p>
-              <p className="text-[11px] text-slate-500 font-medium">Active portal status</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600">{activeEmployees}</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Active portal status</p>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-1">
+            <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-2xs space-y-1 min-w-0">
               <div className="flex items-center justify-between text-slate-400">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider">Departments</span>
-                <Building2 className="w-4 h-4 text-[#0f365e]" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider truncate">Departments</span>
+                <Building2 className="w-4 h-4 text-[#0f365e] shrink-0" />
               </div>
-              <p className="text-3xl font-extrabold text-[#0f365e]">{rawDepts.length}</p>
-              <p className="text-[11px] text-slate-500 font-medium">Operational business units</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-[#0f365e]">{rawDepts.length}</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Operational units</p>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-1">
+            <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-2xs space-y-1 min-w-0">
               <div className="flex items-center justify-between text-slate-400">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider">Leave Categories</span>
-                <CalendarDays className="w-4 h-4 text-amber-600" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider truncate">Leave Categories</span>
+                <CalendarDays className="w-4 h-4 text-amber-600 shrink-0" />
               </div>
-              <p className="text-3xl font-extrabold text-amber-600">{leaveUsage.length}</p>
-              <p className="text-[11px] text-slate-500 font-medium">Configured leave policies</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-amber-600">{leaveUsage.length}</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Configured policies</p>
             </div>
           </div>
 
           {/* INTERACTIVE CONTROLS: TABS, SEARCH, & DEPT FILTER */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             {/* TABS */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto max-w-full">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'overview' ? 'bg-[#0f365e] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -221,7 +221,7 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
               </button>
               <button
                 onClick={() => setActiveTab('leave')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'leave' ? 'bg-[#0f365e] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -229,7 +229,7 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
               </button>
               <button
                 onClick={() => setActiveTab('attendance')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'attendance' ? 'bg-[#0f365e] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -238,7 +238,7 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
               {portalNamespace === 'admin' && (
                 <button
                   onClick={() => setActiveTab('monthly_attendance')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                     activeTab === 'monthly_attendance' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >

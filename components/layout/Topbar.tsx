@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
-import { LogOut, Search, Settings, CheckCircle2, Clock, Bell } from '@/components/ui/Icon';
+import { LogOut, Search, Settings, CheckCircle2, Clock, Bell, Menu } from '@/components/ui/Icon';
 import { Toast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
 import { getCurrentLocation } from '@/lib/geolocation';
+import { useTheme } from '@/lib/theme-context';
 
 function formatTimeDisplay(timeStr?: string | null): string {
   if (!timeStr) return '';
@@ -32,6 +33,7 @@ export function Topbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { toggleMobileMenu } = useTheme();
 
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
@@ -226,12 +228,22 @@ export function Topbar() {
   const hasCheckedOut = !!todayAttendance?.check_out;
 
   return (
-    <header className="h-16 bg-white border-b border-[#c3c6cf] px-6 flex items-center justify-between sticky top-0 z-10 shadow-2xs text-xs">
-      {/* Title & Search */}
-      <div className="flex items-center gap-6">
-        <span className="font-extrabold text-[#0f365e] text-lg tracking-tight">HRMS Portal</span>
+    <header className="h-14 sm:h-16 bg-white border-b border-[#c3c6cf] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs text-xs">
+      {/* Mobile Hamburger & Title & Search */}
+      <div className="flex items-center gap-2 sm:gap-6 min-w-0">
+        <button
+          onClick={toggleMobileMenu}
+          aria-label="Open mobile navigation menu"
+          className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-[#0f365e] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
 
-        <div className="hidden md:flex items-center relative w-72">
+        <span className="font-extrabold text-[#0f365e] text-base sm:text-lg tracking-tight truncate">
+          HRMS<span className="hidden sm:inline"> Portal</span>
+        </span>
+
+        <div className="hidden md:flex items-center relative w-64 lg:w-72">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5" />
           <input
             type="text"
@@ -241,8 +253,8 @@ export function Topbar() {
         </div>
       </div>
 
-      {/* Directory & Reports Navigation */}
-      <div className="flex items-center gap-6">
+      {/* Directory & Reports Navigation & Controls */}
+      <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
         <div className="hidden lg:flex items-center gap-6 text-sm font-bold text-slate-600 h-16">
           <Link
             href={directoryHref}
@@ -270,13 +282,14 @@ export function Topbar() {
 
         {/* CHECK IN & CHECK OUT BUTTONS */}
         {loadingAttendance ? (
-          <div className="flex items-center gap-2">
-            <div className="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-medium animate-pulse">
-              Syncing attendance status...
+          <div className="flex items-center">
+            <div className="px-2 sm:px-3 py-1 bg-slate-100 text-slate-400 rounded-lg text-[11px] sm:text-xs font-medium animate-pulse">
+              <span className="hidden sm:inline">Syncing attendance...</span>
+              <span className="sm:hidden">Syncing...</span>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {(() => {
               const shiftEndTime = user?.shift?.end_time || '18:00:00';
               const isSaturday = new Date().getDay() === 6;
@@ -290,55 +303,55 @@ export function Topbar() {
                 <>
                   {/* Check In Status / Button */}
                   {hasCheckedIn ? (
-                    <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>In: {formatTimeDisplay(todayAttendance.check_in)}</span>
+                    <div className="px-2 sm:px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="whitespace-nowrap">In: {formatTimeDisplay(todayAttendance.check_in)}</span>
                     </div>
                   ) : isPastAutoCheckout ? (
-                    <div className="px-3 py-1 bg-slate-100 border border-slate-200 text-slate-400 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-not-allowed" title="Shift ended. Check-in closed for today.">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Shift Ended</span>
+                    <div className="px-2 sm:px-3 py-1 bg-slate-100 border border-slate-200 text-slate-400 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none cursor-not-allowed" title="Shift ended. Check-in closed for today.">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="whitespace-nowrap">Ended</span>
                     </div>
                   ) : (
                     <button
                       onClick={handleCheckIn}
                       disabled={checkingIn}
-                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-lg shadow-2xs transition-all cursor-pointer text-xs disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-lg shadow-2xs transition-all cursor-pointer text-xs disabled:opacity-50 flex items-center gap-1.5"
                       title="Record your daily check-in time"
                     >
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{checkingIn ? 'Recording...' : 'Check In'}</span>
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span className="whitespace-nowrap">{checkingIn ? 'Recording...' : 'Check In'}</span>
                     </button>
                   )}
 
                   {/* Check Out Status / Button */}
                   {hasCheckedOut ? (
-                    <div className="px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-default" title={todayAttendance.notes || 'Attendance checked out'}>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Out: {formatTimeDisplay(todayAttendance.check_out)}</span>
+                    <div className="px-2 sm:px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none cursor-default" title={todayAttendance.notes || 'Attendance checked out'}>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="whitespace-nowrap">Out: {formatTimeDisplay(todayAttendance.check_out)}</span>
                       {todayAttendance.notes?.includes('Auto check-out') && (
-                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
+                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5 hidden sm:inline">Auto</span>
                       )}
                     </div>
                   ) : hasCheckedIn && isPastAutoCheckout ? (
-                    <div className="px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1.5 text-xs select-none cursor-default" title="Shift ended. Auto check-out triggered.">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Out: {formatTimeDisplay(effectiveCutoffTime)}</span>
-                      <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5">Auto</span>
+                    <div className="px-2 sm:px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none cursor-default" title="Shift ended. Auto check-out triggered.">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="whitespace-nowrap">Out: {formatTimeDisplay(effectiveCutoffTime)}</span>
+                      <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5 hidden sm:inline">Auto</span>
                     </div>
                   ) : (
                     <button
                       onClick={handleCheckOut}
                       disabled={checkingOut || !hasCheckedIn}
-                      className={`px-3.5 py-1.5 font-bold rounded-lg shadow-2xs transition-all text-xs flex items-center gap-1.5 ${
+                      className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 font-bold rounded-lg shadow-2xs transition-all text-xs flex items-center gap-1.5 ${
                         hasCheckedIn
                           ? 'bg-rose-600 hover:bg-rose-700 active:scale-95 text-white cursor-pointer'
                           : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                       }`}
                       title={!hasCheckedIn ? 'Must check in first before checking out' : 'Record your daily check-out time'}
                     >
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{checkingOut ? 'Recording...' : 'Check Out'}</span>
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span className="whitespace-nowrap">{checkingOut ? 'Recording...' : 'Check Out'}</span>
                     </button>
                   )}
                 </>
@@ -348,7 +361,7 @@ export function Topbar() {
         )}
 
         {/* User Account Controls */}
-        <div className="flex items-center gap-3 border-l border-[#c3c6cf] pl-4 relative">
+        <div className="flex items-center gap-1.5 sm:gap-3 border-l border-[#c3c6cf] pl-2 sm:pl-4 relative">
           {/* Notifications Dropdown Toggle */}
           <div className="relative">
             <button
@@ -358,7 +371,7 @@ export function Topbar() {
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute 0 top-0.5 right-0.5 min-w-[15px] h-[15px] px-0.5 bg-rose-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs animate-pulse">
+                <span className="absolute top-0.5 right-0.5 min-w-[15px] h-[15px] px-0.5 bg-rose-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -371,7 +384,7 @@ export function Topbar() {
                   className="fixed inset-0 z-40"
                   onClick={() => setIsNotifDropdownOpen(false)}
                 />
-                <div className="absolute right-0 top-11 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-11 w-[calc(100vw-1.5rem)] sm:w-96 max-w-sm bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in zoom-in-95 duration-150">
                   {/* POPUP HEADER */}
                   <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -458,7 +471,7 @@ export function Topbar() {
 
           <Link
             href="/profile"
-            className="w-8 h-8 rounded-full bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs flex items-center justify-center shadow-2xs transition-all ring-offset-1 hover:ring-2 hover:ring-[#0f365e] cursor-pointer"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs flex items-center justify-center shadow-2xs transition-all ring-offset-1 hover:ring-2 hover:ring-[#0f365e] cursor-pointer shrink-0"
             title={`${user?.name || 'User'} (My Profile)`}
           >
             {user?.name ? user.name[0] : 'U'}

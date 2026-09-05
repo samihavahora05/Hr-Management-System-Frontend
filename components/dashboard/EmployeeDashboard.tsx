@@ -65,8 +65,8 @@ export function EmployeeDashboard({
   return (
     <div className="space-y-6 text-slate-900">
       {/* PAGE HEADER STRIP */}
-      <div className="pb-2">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+      <div className="pb-1 sm:pb-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Welcome, {user?.name?.split(' ')[0] || 'Employee'}
         </h1>
         <p className="text-xs text-slate-500 mt-1 font-medium">
@@ -75,19 +75,19 @@ export function EmployeeDashboard({
       </div>
 
       {/* TOP 4 SUMMARY CARDS ROW */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* MY WORK TASKS */}
         <Link
           href="/employee/tasks"
-          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="flex items-center gap-1.5 group-hover:text-indigo-600 transition-colors">
-              <ListTodo className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" /> My Assigned Tasks
+            <span className="flex items-center gap-1.5 group-hover:text-indigo-600 transition-colors truncate">
+              <ListTodo className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform shrink-0" /> My Tasks
             </span>
-            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
-          <div className="text-3xl font-black text-indigo-900 mt-2 font-mono flex items-baseline gap-2">
+          <div className="text-2xl sm:text-3xl font-black text-indigo-900 mt-2 font-mono flex items-baseline gap-2 flex-wrap">
             <span>{myTasks.total || 0}</span>
             <span className="text-xs font-semibold text-slate-500 font-sans">total work todos</span>
           </div>
@@ -97,15 +97,15 @@ export function EmployeeDashboard({
         {/* TASK COMPLETION RATE */}
         <Link
           href="/employee/tasks"
-          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="flex items-center gap-1.5 group-hover:text-emerald-600 transition-colors">
-              <TrendingUp className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" /> My Completion Rate
+            <span className="flex items-center gap-1.5 group-hover:text-emerald-600 transition-colors truncate">
+              <TrendingUp className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform shrink-0" /> Completion Rate
             </span>
-            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
-          <div className="text-3xl font-black text-emerald-700 mt-2 font-mono flex items-baseline gap-2">
+          <div className="text-2xl sm:text-3xl font-black text-emerald-700 mt-2 font-mono flex items-baseline gap-2 flex-wrap">
             <span>{myTasks.completion_rate || 0}%</span>
           </div>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-2">
@@ -116,15 +116,15 @@ export function EmployeeDashboard({
         {/* LEAVE BALANCE */}
         <Link
           href="/employee/leave"
-          className="group bg-white border border-slate-200 hover:border-[#0f365e]/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-[#0f365e]/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="flex items-center gap-1.5 group-hover:text-[#0f365e] transition-colors">
-              <CalendarDays className="w-4 h-4 text-slate-400 group-hover:text-[#0f365e] transition-colors" /> Leave Quota
+            <span className="flex items-center gap-1.5 group-hover:text-[#0f365e] transition-colors truncate">
+              <CalendarDays className="w-4 h-4 text-slate-400 group-hover:text-[#0f365e] transition-colors shrink-0" /> Leave Quota
             </span>
-            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#0f365e] group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#0f365e] group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
-          <div className="text-3xl font-black text-[#0f365e] mt-2 font-mono flex items-baseline gap-2">
+          <div className="text-2xl sm:text-3xl font-black text-[#0f365e] mt-2 font-mono flex items-baseline gap-2 flex-wrap">
             <span>{totalRemainingLeave}</span>
             <span className="text-xs font-semibold text-slate-500 font-sans">days available</span>
           </div>
@@ -134,24 +134,24 @@ export function EmployeeDashboard({
         {/* TODAY'S CHECK-IN */}
         <Link
           href="/attendance"
-          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer relative"
+          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer relative min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="flex items-center gap-1.5 group-hover:text-slate-900 transition-colors">
-              <Clock className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" /> Today's Attendance
+            <span className="flex items-center gap-1.5 group-hover:text-slate-900 transition-colors truncate">
+              <Clock className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors shrink-0" /> Today Attendance
             </span>
-            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
 
           {isCheckedIn ? (
             <>
-              <div className="text-xl font-black text-slate-900 mt-2 font-mono flex items-center justify-between">
+              <div className="text-lg sm:text-xl font-black text-slate-900 mt-2 font-mono flex items-center justify-between flex-wrap gap-1">
                 <span>In: {formatTimeDisplay(myTodayAttendance.check_in)}</span>
                 {isCheckedOut && (
                   <span className="text-xs text-slate-600 font-semibold">Out: {formatTimeDisplay(myTodayAttendance.check_out)}</span>
                 )}
               </div>
-              <p className={`text-[10px] font-bold mt-2 flex items-center gap-1 ${
+              <p className={`text-[10px] font-bold mt-2 flex items-center gap-1 truncate ${
                 isCheckedOut 
                   ? 'text-indigo-700' 
                   : myTodayAttendance.status === 'late' 
@@ -160,12 +160,12 @@ export function EmployeeDashboard({
               }`}>
                 {isCheckedOut 
                   ? (myTodayAttendance.notes?.includes('Auto check-out') ? '⚡ Auto Checked Out' : '✓ Checked Out') 
-                  : (myTodayAttendance.status === 'late' ? '● Late (Auto Checkout: 6 PM / Sat 2 PM)' : '✓ Active (Auto Checkout: 6 PM / Sat 2 PM)')}
+                  : (myTodayAttendance.status === 'late' ? '● Late (Checkout: 6PM)' : '✓ Active (Checkout: 6PM)')}
               </p>
             </>
           ) : (
             <>
-              <div className="text-2xl font-black text-slate-400 mt-2 font-mono tracking-widest">
+              <div className="text-xl sm:text-2xl font-black text-slate-400 mt-2 font-mono tracking-widest">
                 -- : -- : --
               </div>
               <p className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 mt-2 inline-flex items-center gap-1">
@@ -177,8 +177,8 @@ export function EmployeeDashboard({
       </div>
 
       {/* RECENT ASSIGNED TASKS FOR EMPLOYEE */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <ListTodo className="w-4 h-4 text-[#0f365e]" />
             <span>My Pending & Recent Tasks</span>
@@ -196,14 +196,14 @@ export function EmployeeDashboard({
         ) : (
           <div className="space-y-3 text-xs">
             {myRecentTasks.slice(0, 4).map((t: any) => (
-              <div key={t.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                <div>
-                  <p className="font-extrabold text-slate-900">{t.title}</p>
+              <div key={t.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-extrabold text-slate-900 truncate">{t.title}</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     Assigned by <strong className="capitalize">{t.assigned_by_role}</strong> ({t.assigner?.name || 'Manager'}) • Due: {t.due_date || 'N/A'}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize bg-white text-slate-700">
                     {t.status}
                   </span>
@@ -218,7 +218,7 @@ export function EmployeeDashboard({
       </div>
 
       {/* ANNOUNCEMENTS FEED */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs">
         <h3 className="text-base font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-[#0f365e]" />
           <span>Announcements & Company Bulletins</span>
@@ -245,20 +245,20 @@ export function EmployeeDashboard({
       </div>
 
       {/* BOTTOM QUICK ACTIONS ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         <Link
           href="/employee/tasks"
-          className="p-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-bold rounded-xl border border-indigo-200 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer text-sm"
+          className="p-3.5 sm:p-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-bold rounded-xl border border-indigo-200 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs sm:text-sm"
         >
-          <ListTodo className="w-5 h-5 text-indigo-900" />
+          <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-900 shrink-0" />
           <span>View My Todo Tasker</span>
         </Link>
 
         <Link
           href="/employee/leave"
-          className="p-4 bg-sky-100 hover:bg-sky-200 text-sky-950 font-bold rounded-xl border border-sky-300 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer text-sm"
+          className="p-3.5 sm:p-4 bg-sky-100 hover:bg-sky-200 text-sky-950 font-bold rounded-xl border border-sky-300 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs sm:text-sm"
         >
-          <Plus className="w-5 h-5 text-sky-900" />
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-sky-900 shrink-0" />
           <span>Apply for Leave</span>
         </Link>
 
@@ -275,23 +275,23 @@ export function EmployeeDashboard({
             <button
               onClick={onCheckIn}
               disabled={checkingIn}
-              className="p-4 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-sm disabled:opacity-50"
+              className="p-3.5 sm:p-4 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-xs sm:text-sm disabled:opacity-50 sm:col-span-2 md:col-span-1"
             >
-              <Clock className="w-5 h-5" />
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <span>{checkingIn ? 'Clocking In...' : 'Clock In Now'}</span>
             </button>
           ) : (!isCheckedOut && !isPastAutoCheckout) ? (
             <button
               onClick={onCheckOut}
               disabled={checkingIn}
-              className="p-4 bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-sm disabled:opacity-50"
+              className="p-3.5 sm:p-4 bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer text-xs sm:text-sm disabled:opacity-50 sm:col-span-2 md:col-span-1"
             >
-              <Clock className="w-5 h-5" />
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <span>{checkingIn ? 'Clocking Out...' : 'Clock Out'}</span>
             </button>
           ) : (
-            <div className="p-4 bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-sm select-none">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <div className="p-3.5 sm:p-4 bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-xs sm:text-sm select-none sm:col-span-2 md:col-span-1 text-center">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" />
               <span>
                 Shift Completed Today {isCheckedOut ? `(${formatTimeDisplay(myTodayAttendance?.check_out)})` : `(${formatTimeDisplay(effectiveCutoffTime)} Auto)`}
               </span>
