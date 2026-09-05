@@ -81,22 +81,6 @@ export default function HRAttendancePage() {
     }
   };
 
-  const handleExportExcel = () => {
-    if (filteredAttendances.length === 0) {
-      setToastMessage('No attendance records available to export.');
-      return;
-    }
-    const headers = ['Date', 'Employee Name', 'Employee Code', 'Check In', 'Check Out', 'Status', 'Notes'];
-    const rows = filteredAttendances.map((a) => [
-      formatDate(a.date),
-      a.user?.name || `Employee #${a.user_id}`,
-      a.user?.employee_code || '',
-      formatTime(a.check_in),
-      formatTime(a.check_out),
-      a.status || 'present',
-      a.notes || 'N/A',
-    ]);
-    exportToCSV('Attendance_Register', headers, rows);
   // Date & Search Filtering State
   const [datePreset, setDatePreset] = useState<'all' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom'>('all');
   const [startDate, setStartDate] = useState<string>('');
