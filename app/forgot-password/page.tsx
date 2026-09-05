@@ -76,9 +76,14 @@ export default function ForgotPasswordPage() {
         }),
       });
 
-      setSuccessMessage(data.message || 'Password changed successfully! You can now sign in.');
+      setSuccessMessage(data.message || 'Password reset successfully! Redirecting to login...');
       setPassword('');
       setPasswordConfirmation('');
+
+      // Automatically redirect to login with success state
+      setTimeout(() => {
+        router.push(`/login?reset=success&email=${encodeURIComponent(cleanEmail)}`);
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Unable to reset password. Please check your details.');
     } finally {
