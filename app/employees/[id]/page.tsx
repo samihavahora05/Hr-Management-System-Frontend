@@ -10,6 +10,7 @@ import { Toast } from '@/components/ui/Toast';
 import { fetchApi, downloadApiFile, fetchApiBlobUrl } from '@/lib/api';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Download, Upload, Plus, Calendar, Clock, User, Eye, ExternalLink, RefreshCw } from '@/components/ui/Icon';
+import { UniversalDocViewer } from '@/components/documents/UniversalDocViewer';
 
 export default function EmployeeDetailPage() {
   const params = useParams();
@@ -425,7 +426,7 @@ export default function EmployeeDetailPage() {
                 }
               }}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50"
-              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp,.svg"
             />
           </div>
 
@@ -517,7 +518,7 @@ export default function EmployeeDetailPage() {
             </div>
           </div>
 
-          <div className="w-full h-[65vh] min-h-[450px] bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-center items-center relative">
+          <div className="w-full h-[68vh] min-h-[480px] bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-center items-center relative">
             {previewLoading && (
               <div className="flex flex-col items-center gap-2 p-8 text-center animate-pulse">
                 <div className="w-10 h-10 border-4 border-[#0f365e] border-t-transparent rounded-full animate-spin"></div>
@@ -544,63 +545,13 @@ export default function EmployeeDetailPage() {
             )}
 
             {!previewLoading && !previewError && previewBlobUrl && (
-              (() => {
-                const ext = (previewDoc?.file_url ? previewDoc.file_url.split('.').pop() : '').toLowerCase();
-                const isPdf = ext === 'pdf' || previewContentType.includes('pdf');
-                const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext) || previewContentType.includes('image');
-                const isText = ['txt', 'csv', 'log', 'json'].includes(ext) || previewContentType.includes('text');
-
-                if (isPdf) {
-                  return (
-                    <iframe
-                      src={`${previewBlobUrl}#toolbar=1&navpanes=0`}
-                      className="w-full h-full rounded-xl bg-white border-0"
-                      title={previewDoc?.title || 'PDF Preview'}
-                    />
-                  );
-                }
-
-                if (isImage) {
-                  return (
-                    <div className="w-full h-full flex items-center justify-center p-4 bg-slate-900/5 overflow-auto">
-                      <img
-                        src={previewBlobUrl}
-                        alt={previewDoc?.title || 'Document Image'}
-                        className="max-h-full max-w-full object-contain rounded-lg shadow-md bg-white"
-                      />
-                    </div>
-                  );
-                }
-
-                if (isText) {
-                  return (
-                    <iframe
-                      src={previewBlobUrl}
-                      className="w-full h-full p-4 bg-white font-mono text-xs overflow-auto"
-                      title={previewDoc?.title || 'Text Preview'}
-                    />
-                  );
-                }
-
-                return (
-                  <div className="text-center p-8 space-y-3 max-w-md bg-white rounded-xl border border-slate-200 shadow-xs">
-                    <FileText className="w-12 h-12 text-[#0f365e] mx-auto" />
-                    <p className="text-sm font-extrabold text-slate-800">{previewDoc?.title}</p>
-                    <p className="text-xs text-slate-500">
-                      This is an Office document (<span className="uppercase font-bold">{ext || 'file'}</span>).
-                    </p>
-                    <div className="pt-2">
-                      <button
-                        onClick={() => handleDownloadDoc(previewDoc)}
-                        className="px-5 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Download File</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()
+              <UniversalDocViewer
+                url={previewBlobUrl}
+                fileName={previewDoc.file_url ? previewDoc.file_url.split('/').pop() : `${previewDoc.title || 'document'}.pdf`}
+                contentType={previewContentType}
+                title={previewDoc.title}
+                onDownload={() => handleDownloadDoc(previewDoc)}
+              />
             )}
           </div>
         </div>
