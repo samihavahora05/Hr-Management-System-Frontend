@@ -4,6 +4,16 @@ export interface SubTask {
   completed: boolean;
 }
 
+export interface TaskEditHistoryItem {
+  id: string;
+  editor_id: number;
+  editor_name: string;
+  editor_role: string;
+  timestamp: string;
+  summary: string;
+  changes: string[];
+}
+
 export interface TaskUser {
   id: number;
   name: string;
@@ -37,10 +47,15 @@ export interface Task {
   notes?: string | null;
   completion_notes?: string | null;
   completed_at?: string | null;
+  last_edited_by?: number | null;
+  last_edited_at?: string | null;
+  last_edit_summary?: string | null;
+  edit_history?: TaskEditHistoryItem[] | null;
   created_at: string;
   updated_at: string;
   assigner?: TaskUser;
   assignedTo?: TaskUser;
+  lastEditor?: TaskUser;
 }
 
 export interface TaskMetrics {

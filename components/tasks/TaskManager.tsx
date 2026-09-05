@@ -21,6 +21,13 @@ import {
   LayoutList,
   X,
   ChevronRight,
+  Pencil,
+  Edit,
+  History,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  Shield,
 } from '@/components/ui/Icon';
 
 interface TaskManagerProps {
@@ -62,12 +69,15 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
   // Modals & Selection
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
-  // Task Form State
+  // Create Task Form State
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formAssignedTo, setFormAssignedTo] = useState<string | number>('');
@@ -77,6 +87,19 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
   const [formNotes, setFormNotes] = useState('');
   const [formSubtasks, setFormSubtasks] = useState<SubTask[]>([]);
   const [newSubtaskInput, setNewSubtaskInput] = useState('');
+
+  // Edit Task Form State
+  const [editTaskId, setEditTaskId] = useState<number | null>(null);
+  const [editFormTitle, setEditFormTitle] = useState('');
+  const [editFormDescription, setEditFormDescription] = useState('');
+  const [editFormAssignedTo, setEditFormAssignedTo] = useState<string | number>('');
+  const [editFormCategory, setEditFormCategory] = useState('general');
+  const [editFormPriority, setEditFormPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [editFormStatus, setEditFormStatus] = useState<'todo' | 'in_progress' | 'completed' | 'overdue' | 'cancelled'>('todo');
+  const [editFormDueDate, setEditFormDueDate] = useState('');
+  const [editFormNotes, setEditFormNotes] = useState('');
+  const [editFormSubtasks, setEditFormSubtasks] = useState<SubTask[]>([]);
+  const [editNewSubtaskInput, setEditNewSubtaskInput] = useState('');
 
   useEffect(() => {
     loadTasks();
@@ -149,6 +172,95 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
     }
   };
 
+  const openEditModal = (task: Task) => {
+    if (assignableUsers.length === 0) {
+      loadAssignableUsers();
+    }
+    const assignedId =
+      typeof task.assigned_to === 'object' && task.assigned_to !== null
+        ? (task.assigned_to as any).id
+        : (task.assignedTo?.id || task.assigned_to || '');
+
+    setEditTaskId(task.id);
+    setEditFormTitle(task.title || '');
+    setEditFormDescription(task.description || '');
+    setEditFormAssignedTo(assignedId);
+    setEditFormCategory(task.category || 'general');
+    setEditFormPriority(task.priority || 'medium');
+    setEditFormStatus(task.status || 'todo');
+    setEditFormDueDate(task.due_date ? String(task.due_date).substring(0, 10) : '');
+    setEditFormNotes(task.notes || '');
+    setEditFormSubtasks(
+      Array.isArray(task.subtasks)
+        ? task.subtasks.map((st) => ({
+            id: st.id,
+            text: st.text || (st as any).title || '',
+            completed: Boolean(st.completed),
+          }))
+        : []
+    );
+    setEditNewSubtaskInput('');
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditAddSubtaskItem = () => {
+    if (!editNewSubtaskInput.trim()) return;
+    setEditFormSubtasks([
+      ...editFormSubtasks,
+      { id: Date.now(), text: editNewSubtaskInput.trim(), completed: false },
+    ]);
+    setEditNewSubtaskInput('');
+  };
+
+  const handleEditRemoveSubtaskItem = (id: string | number) => {
+    setEditFormSubtasks(editFormSubtasks.filter((st) => st.id !== id));
+  };
+
+  const handleEditToggleSubtaskItem = (id: string | number) => {
+    setEditFormSubtasks(
+      editFormSubtasks.map((st) =>
+        st.id === id ? { ...st, completed: !st.completed } : st
+      )
+    );
+  };
+
+  const handleUpdateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTaskId) return;
+
+    setEditSubmitting(true);
+    try {
+      const res = await fetchApi(`/tasks/${editTaskId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: editFormTitle,
+          description: editFormDescription,
+          assigned_to: editFormAssignedTo,
+          category: editFormCategory,
+          priority: editFormPriority,
+          status: editFormStatus,
+          due_date: editFormDueDate || null,
+          notes: editFormNotes || null,
+          subtasks: editFormSubtasks,
+        }),
+      });
+
+      const updatedTask = res.task;
+      setTasks((prev) => prev.map((t) => (t.id === editTaskId ? (updatedTask || { ...t, title: editFormTitle }) : t)));
+      if (selectedTask && selectedTask.id === editTaskId) {
+        setSelectedTask(updatedTask);
+      }
+
+      setToastMessage('Task updated successfully!');
+      setIsEditModalOpen(false);
+      await loadTasks();
+    } catch (err: any) {
+      setToastMessage(err.message || 'Failed to update task');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetUserId = formAssignedTo || user?.id;
@@ -187,7 +299,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
   const handleStatusChange = async (taskId: number, newStatus: string) => {
     try {
-      await fetchApi(`/tasks/${taskId}/status`, {
+      const res = await fetchApi(`/tasks/${taskId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status: newStatus }),
       });
@@ -195,16 +307,17 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
       const isComplete = newStatus === 'completed';
       setToastMessage(
         isComplete
-          ? '🎉 Task submitted and marked as Completed!'
+          ? '🎉 Task marked as Completed!'
           : `Task status updated to ${newStatus.replace('_', ' ')}`
       );
 
+      const updatedTask = res?.task;
       // Update local state smoothly
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: newStatus as any } : t))
+        prev.map((t) => (t.id === taskId ? (updatedTask || { ...t, status: newStatus as any }) : t))
       );
       if (selectedTask && selectedTask.id === taskId) {
-        setSelectedTask((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+        setSelectedTask((prev) => (prev ? (updatedTask || { ...prev, status: newStatus as any }) : null));
       }
       loadTasks();
     } catch (err: any) {
@@ -213,8 +326,8 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
   };
 
   const handleToggleSubtask = async (task: Task, subtaskId: string | number) => {
-    if (!isTaskAssignee(task)) {
-      setToastMessage('Only the assigned employee performing this task can update checklist items.');
+    if (!canUpdateTaskStatus(task)) {
+      setToastMessage('Only the assigned employee or management can update checklist items.');
       return;
     }
     try {
@@ -284,6 +397,16 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
         ? (task.assigned_to as any).id
         : (task.assignedTo?.id || task.assigned_to);
     return Number(assignedId) === Number(user.id);
+  };
+
+  const canManageTask = (task?: Task | null) => {
+    if (isAdminMode || isHRMode || isManagerMode || isTeamLeaderMode) return true;
+    if (task && user?.id && Number(task.assigner_id) === Number(user.id)) return true;
+    return false;
+  };
+
+  const canUpdateTaskStatus = (task: Task) => {
+    return isTaskAssignee(task) || canManageTask(task);
   };
 
   const filteredTasks = tasks.filter((t) => {
@@ -418,7 +541,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {isHRMode ? 'All Organization Tasks' : 'Team Member Tasks'}
+                  {isAdminMode ? 'All Organization Tasks' : isHRMode ? 'All HR Scope Tasks' : 'Team Member Tasks'}
                 </button>
 
                 <button
@@ -438,7 +561,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                   📋 Employee Work Todo List
                 </span>
                 <span className="text-xs text-slate-500 font-semibold">
-                  (Assigned by HR & Manager)
+                  (Assigned by Management)
                 </span>
               </div>
             )}
@@ -467,7 +590,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
               </button>
             </div>
 
-            {/* CREATE / ASSIGN TASK BUTTON FOR HR & MANAGER */}
+            {/* CREATE / ASSIGN TASK BUTTON FOR ADMIN / HR / MANAGER */}
             {!isEmployeeMode && (
               <button
                 onClick={() => {
@@ -477,7 +600,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                 className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>{isHRMode ? 'Assign Task to Employee' : 'Assign Task to Team Member'}</span>
+                <span>{isAdminMode ? 'Create / Assign Task' : isHRMode ? 'Assign Task to Employee' : 'Assign Task to Team Member'}</span>
               </button>
             )}
           </div>
@@ -553,7 +676,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
           <p className="text-sm font-extrabold text-slate-800 mb-1">No Tasks to Display</p>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
             {isEmployeeMode
-              ? 'You currently have no active work items assigned to you. Outstanding tasks from HR or Manager will appear here.'
+              ? 'You currently have no active work items assigned to you. Outstanding tasks from Management will appear here.'
               : 'No tasks matching your current selection filter.'}
           </p>
           {!isEmployeeMode && (
@@ -598,7 +721,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                   <th className="py-3 px-4">Due Date</th>
                   <th className="py-3 px-4">Subtasks Progress</th>
                   <th className="py-3 px-4">Current Status</th>
-                  <th className="py-3 px-4 text-center">Complete Task</th>
+                  <th className="py-3 px-4 text-center">Actions & Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -620,6 +743,9 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                     (typeof task.assigned_to === 'object' && task.assigned_to !== null ? ((task.assigned_to as any)?.name || `Employee #${(task.assigned_to as any)?.id || ''}`) : (task.assigned_to ? `Employee #${task.assigned_to}` : 'Unassigned'));
                   const assignerName = task.assigner?.name || (typeof task.assigner_id === 'object' && task.assigner_id !== null ? ((task.assigner_id as any)?.name || `User #${(task.assigner_id as any)?.id || ''}`) : (task.assigner_id ? `User #${task.assigner_id}` : 'System Admin'));
 
+                  const userCanManage = canManageTask(task);
+                  const userCanUpdateStatus = canUpdateTaskStatus(task);
+
                   return (
                     <tr
                       key={task.id}
@@ -634,19 +760,19 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         <div className="flex items-start gap-2.5">
                           <input
                             type="checkbox"
-                            disabled={!isTaskAssignee(task)}
+                            disabled={!userCanUpdateStatus}
                             checked={task.status === 'completed'}
                             onChange={(e) => {
                               e.stopPropagation();
-                              if (!isTaskAssignee(task)) return;
+                              if (!userCanUpdateStatus) return;
                               handleStatusChange(
                                 task.id,
                                 task.status === 'completed' ? 'todo' : 'completed'
                               );
                             }}
-                            title={isTaskAssignee(task) ? 'Toggle completion status' : 'Only assigned employee can update status'}
+                            title={userCanUpdateStatus ? 'Toggle completion status' : 'Only assigned employee or admin can update status'}
                             className={`mt-0.5 w-4 h-4 rounded border-slate-300 ${
-                              isTaskAssignee(task) ? 'text-[#0f365e] cursor-pointer' : 'text-slate-300 cursor-not-allowed opacity-40'
+                              userCanUpdateStatus ? 'text-[#0f365e] cursor-pointer' : 'text-slate-300 cursor-not-allowed opacity-40'
                             }`}
                           />
                           <div>
@@ -661,6 +787,17 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                               <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                                 {task.description}
                               </p>
+                            )}
+                            {task.last_edited_at && (
+                              <div
+                                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-850 rounded-md text-[10px] font-semibold"
+                                title={task.last_edit_summary ? `Admin updates: ${task.last_edit_summary}` : 'Task was edited by management'}
+                              >
+                                <History className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span>
+                                  Edited by {task.lastEditor?.name || 'Admin'} ({new Date(task.last_edited_at).toLocaleDateString()})
+                                </span>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -752,14 +889,14 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         )}
                       </td>
 
-                      {/* STATUS DISPLAY (EDITABLE ONLY BY ASSIGNEE) */}
+                      {/* STATUS DISPLAY (EDITABLE BY ASSIGNEE OR MANAGEMENT) */}
                       <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {isTaskAssignee(task) ? (() => {
+                        {userCanUpdateStatus ? (() => {
                           const curr = ((task.status as any) === 'pending' ? 'todo' : task.status) as string;
                           const isTodo = curr === 'todo';
                           const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
                           const isCompleted = curr === 'completed' || curr === 'cancelled';
-                          const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
+                          const hasIncompleteSubtasks = !userCanManage && task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
 
                           return (
                             <select
@@ -776,15 +913,15 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                                 task.status
                               )}`}
                             >
-                              <option value="todo" disabled={!isTodo && !isAdminMode}>To Do</option>
-                              <option value="in_progress" disabled={isCompleted && !isAdminMode}>In Progress</option>
+                              <option value="todo" disabled={!isTodo && !userCanManage}>To Do</option>
+                              <option value="in_progress" disabled={isCompleted && !userCanManage}>In Progress</option>
                               <option value="completed">Completed</option>
-                              <option value="cancelled" disabled={isCompleted && !isAdminMode}>Cancelled</option>
+                              <option value="cancelled" disabled={isCompleted && !userCanManage}>Cancelled</option>
                             </select>
                           );
                         })() : (
                           <span
-                            title="Status view only (Assignee updates status)"
+                            title="Status view only"
                             className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize ${getStatusBadge(
                               task.status
                             )}`}
@@ -794,42 +931,53 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         )}
                       </td>
 
-                      {/* PROMINENT SUBMIT COMPLETED BUTTON & DELETE ACTION */}
+                      {/* ACTIONS & COMPLETE BUTTON */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
                           {task.status === 'completed' ? (
                             <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs">
                               <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Done
                             </span>
-                          ) : isTaskAssignee(task) ? (
+                          ) : userCanUpdateStatus ? (
                             <button
                               onClick={() => {
-                                const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
+                                const hasIncompleteSubtasks = !userCanManage && task.subtasks && task.subtasks.length > 0 && task.subtasks.some((s) => !s.completed);
                                 if (hasIncompleteSubtasks) {
                                   setToastMessage('Please complete all checklist subtasks first.');
                                   return;
                                 }
                                 handleStatusChange(task.id, 'completed');
                               }}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                              title="Mark task as completed"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Mark Completed</span>
+                              <span>Done</span>
                             </button>
                           ) : (
-                            <span className="text-[11px] text-slate-400 font-medium italic" title="Assignee updates task status">
-                              View status only
+                            <span className="text-[11px] text-slate-400 font-medium italic">
+                              View only
                             </span>
                           )}
 
-                          {(isAdminMode || !isEmployeeMode || task.assigner_id === user?.id) && (
-                            <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
-                              title="Delete task from system"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          {userCanManage && (
+                            <>
+                              <button
+                                onClick={() => openEditModal(task)}
+                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                                title="Edit task details"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                                title="Delete task from system"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -869,6 +1017,8 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                       task.assignedTo?.name || `User #${task.assigned_to}`;
                     const subtasks = task.subtasks || [];
                     const doneSubtasks = subtasks.filter((s) => s.completed).length;
+                    const userCanManage = canManageTask(task);
+                    const userCanUpdateStatus = canUpdateTaskStatus(task);
 
                     return (
                       <div
@@ -893,17 +1043,23 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                             </span>
                           </div>
 
-                          {(isAdminMode || !isEmployeeMode || task.assigner_id === user?.id) && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTask(task.id);
-                              }}
-                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                              title="Delete task"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          {userCanManage && (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => openEditModal(task)}
+                                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit task"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                title="Delete task"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           )}
                         </div>
 
@@ -924,6 +1080,18 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                           </div>
                         )}
 
+                        {task.last_edited_at && (
+                          <div
+                            className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-[10px] font-semibold w-fit"
+                            title={task.last_edit_summary ? `Admin updates: ${task.last_edit_summary}` : 'Task was edited by management'}
+                          >
+                            <History className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                            <span className="truncate max-w-[170px]">
+                              Edited by {task.lastEditor?.name || 'Admin'}
+                            </span>
+                          </div>
+                        )}
+
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                           <div className="flex items-center gap-1.5">
                             <div className="w-5 h-5 rounded-full bg-[#0f365e] text-white text-[9px] font-bold flex items-center justify-center">
@@ -934,7 +1102,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                             </span>
                           </div>
 
-                          {task.status !== 'completed' && isTaskAssignee(task) && (
+                          {task.status !== 'completed' && userCanUpdateStatus && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -956,17 +1124,17 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
         </div>
       )}
 
-      {/* CREATE & ASSIGN TASK MODAL (FOR HR & MANAGER) */}
+      {/* CREATE & ASSIGN TASK MODAL (FOR ADMIN / HR / MANAGER) */}
       {!isEmployeeMode && (
         <Modal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          title={isHRMode ? 'HR Assign Task to Employee' : 'Manager Assign Task to Team Member'}
+          title={isAdminMode ? 'Admin Create & Assign Task' : isHRMode ? 'HR Assign Task to Employee' : 'Manager Assign Task to Team Member'}
         >
           <form onSubmit={handleCreateTask} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                {isHRMode ? 'Select Employee (Organization-Wide) *' : 'Select Team Member *'}
+                {isAdminMode || isHRMode ? 'Select Employee (Organization-Wide) *' : 'Select Team Member *'}
               </label>
               <select
                 required
@@ -1121,6 +1289,194 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
         </Modal>
       )}
 
+      {/* EDIT TASK MODAL (FOR ADMIN & MANAGEMENT) */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Task #${editTaskId || ''}`}
+        maxWidth="2xl"
+      >
+        <form onSubmit={handleUpdateTask} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Assigned Employee *
+            </label>
+            <select
+              required
+              value={editFormAssignedTo}
+              onChange={(e) => setEditFormAssignedTo(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-[#0f365e]"
+            >
+              {assignableUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.department || 'Staff'} — {u.role?.display_name || 'Employee'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Task Title *</label>
+            <input
+              type="text"
+              required
+              value={editFormTitle}
+              onChange={(e) => setEditFormTitle(e.target.value)}
+              placeholder="Task Title..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-[#0f365e]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Description & Scope</label>
+            <textarea
+              rows={3}
+              value={editFormDescription}
+              onChange={(e) => setEditFormDescription(e.target.value)}
+              placeholder="Detailed instructions..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-[#0f365e]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Priority</label>
+              <select
+                value={editFormPriority}
+                onChange={(e) => setEditFormPriority(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              >
+                <option value="urgent">Urgent</option>
+                <option value="high">High Priority</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+              <select
+                value={editFormCategory}
+                onChange={(e) => setEditFormCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              >
+                <option value="general">General Task</option>
+                <option value="project">Project Work</option>
+                <option value="compliance">HR & Compliance</option>
+                <option value="onboarding">Onboarding / Training</option>
+                <option value="review">Review & Feedback</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
+              <select
+                value={editFormStatus}
+                onChange={(e) => setEditFormStatus(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs capitalize"
+              >
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
+              <input
+                type="date"
+                value={editFormDueDate}
+                onChange={(e) => setEditFormDueDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              />
+            </div>
+          </div>
+
+          {/* SUBTASKS / CHECKLIST BUILDER */}
+          <div className="pt-2">
+            <label className="block text-xs font-bold text-slate-700 mb-1">Subtasks / Checklist Items</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                placeholder="Add subtask item..."
+                value={editNewSubtaskInput}
+                onChange={(e) => setEditNewSubtaskInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleEditAddSubtaskItem();
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs"
+              />
+              <button
+                type="button"
+                onClick={handleEditAddSubtaskItem}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg"
+              >
+                Add Item
+              </button>
+            </div>
+
+            {editFormSubtasks.length > 0 && (
+              <div className="space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200 max-h-40 overflow-y-auto">
+                {editFormSubtasks.map((st) => (
+                  <div key={st.id} className="flex items-center justify-between text-xs py-1 px-2 bg-white rounded-md border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={st.completed}
+                        onChange={() => handleEditToggleSubtaskItem(st.id)}
+                        className="w-3.5 h-3.5 text-[#0f365e] rounded border-slate-300 cursor-pointer"
+                      />
+                      <span className={st.completed ? 'line-through text-slate-400 font-medium' : 'text-slate-700 font-medium'}>
+                        {st.text}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleEditRemoveSubtaskItem(st.id)}
+                      className="text-slate-400 hover:text-rose-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Internal Notes / Instructions</label>
+            <input
+              type="text"
+              value={editFormNotes}
+              onChange={(e) => setEditFormNotes(e.target.value)}
+              placeholder="e.g. Please attach finalized sheet in documents section..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+            />
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={editSubmitting}
+              className="px-4 py-2 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {editSubmitting ? 'Saving...' : 'Save Task Changes'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       {/* TASK DETAIL & ACTION MODAL */}
       {selectedTask && (
         <Modal
@@ -1130,17 +1486,141 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
             setSelectedTask(null);
           }}
           title={`Task #${selectedTask.id}: ${selectedTask.title}`}
+          maxWidth="2xl"
         >
-          <div className="space-y-5">
-            {/* RESTRICTION NOTICE IF NOT ASSIGNEE */}
-            {!isTaskAssignee(selectedTask) && (
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            {/* ADMIN / MANAGEMENT REVISION & UPDATE NOTICE (PROMINENTLY DISPLAYED TO ASSIGNED EMPLOYEE & ALL VIEWERS) */}
+            {(selectedTask.last_edited_at || selectedTask.last_edit_summary || (selectedTask.edit_history && selectedTask.edit_history.length > 0)) && (
+              <div className="rounded-xl border-2 border-amber-300 bg-linear-to-r from-amber-50 via-orange-50/40 to-amber-50 p-4 shadow-2xs space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                      <History className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                          Management Revision Notice
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200 text-amber-900 border border-amber-300">
+                          Updated by {selectedTask.lastEditor?.name || 'Management'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 mt-0.5">
+                        This task was modified on{' '}
+                        <span className="font-bold">
+                          {selectedTask.last_edited_at
+                            ? new Date(selectedTask.last_edited_at).toLocaleString()
+                            : 'recently'}
+                        </span>
+                        . Review the updated details below so there is full alignment.
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedTask.edit_history && selectedTask.edit_history.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowHistory(!showHistory)}
+                      className="px-2.5 py-1 text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                    >
+                      <History className="w-3.5 h-3.5" />
+                      <span>{showHistory ? 'Hide History' : `Full Audit Log (${selectedTask.edit_history.length})`}</span>
+                      {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </div>
+
+                {/* LATEST SUMMARY BOX */}
+                {selectedTask.last_edit_summary && (
+                  <div className="bg-white/95 border border-amber-200 rounded-lg p-3 text-xs text-slate-800 shadow-2xs">
+                    <span className="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider block mb-1.5">
+                      Itemized Changes Applied:
+                    </span>
+                    <div className="space-y-1">
+                      {selectedTask.last_edit_summary.split(';').map((changeItem, idx) => {
+                        const clean = changeItem.trim();
+                        if (!clean) return null;
+                        return (
+                          <div key={idx} className="flex items-start gap-2 text-slate-700 font-medium text-[11px]">
+                            <span className="text-amber-600 font-bold mt-0.5">•</span>
+                            <span>{clean}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* EXPANDABLE REVISION HISTORY LOG */}
+                {showHistory && selectedTask.edit_history && selectedTask.edit_history.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-amber-200/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-950">
+                        Complete Task Change History
+                      </span>
+                      <span className="text-[10px] text-amber-800 font-medium">
+                        {selectedTask.edit_history.length} revision{selectedTask.edit_history.length > 1 ? 's' : ''} recorded
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {selectedTask.edit_history.map((h, i) => (
+                        <div
+                          key={i}
+                          className="p-2.5 bg-white rounded-lg border border-amber-200/80 text-xs shadow-2xs space-y-1"
+                        >
+                          <div className="flex items-center justify-between gap-2 text-[10px]">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-extrabold text-slate-900">{h.editor_name || (h as any).edited_by_name || 'Admin'}</span>
+                              <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded-xs font-semibold capitalize">
+                                {h.editor_role || (h as any).edited_by_role || 'Staff'}
+                              </span>
+                            </div>
+                            <span className="text-slate-400 font-medium">
+                              {h.timestamp ? new Date(h.timestamp).toLocaleString() : ''}
+                            </span>
+                          </div>
+                          <ul className="list-disc list-inside text-[11px] text-slate-700 pl-1 space-y-0.5">
+                            {(h.changes || []).map((ch, cIdx) => (
+                              <li key={cIdx} className="font-medium text-slate-700">{ch}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MANAGEMENT PERMISSION NOTICE OR ASSIGNEE NOTICE */}
+            {canManageTask(selectedTask) ? (
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-xs text-blue-900 font-medium flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-blue-700 shrink-0" />
+                  <span>
+                    <strong>Administrative Access:</strong> You can edit this task, reassign members, modify checklist subtasks, or update status.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    openEditModal(selectedTask);
+                  }}
+                  className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] rounded-lg shrink-0 cursor-pointer"
+                >
+                  Edit Task
+                </button>
+              </div>
+            ) : !isTaskAssignee(selectedTask) ? (
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 font-medium flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>
-                  Status change is reserved for assigned employee (<strong>{selectedTask.assignedTo?.name || 'Assignee'}</strong>). You are viewing this task as Assigner / Manager.
+                  Status change is reserved for assigned employee (<strong>{selectedTask.assignedTo?.name || 'Assignee'}</strong>). You are viewing this task as Viewer.
                 </span>
               </div>
-            )}
+            ) : null}
 
             {/* BADGES & STATUS SWITCHER */}
             <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -1159,12 +1639,13 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-600">Status:</span>
-                {isTaskAssignee(selectedTask) ? (() => {
+                {canUpdateTaskStatus(selectedTask) ? (() => {
                   const curr = ((selectedTask.status as any) === 'pending' ? 'todo' : selectedTask.status) as string;
                   const isTodo = curr === 'todo';
                   const isInProgress = curr === 'in_progress' || curr === 'under_review' || curr === 'overdue';
                   const isCompleted = curr === 'completed' || curr === 'cancelled';
-                  const hasIncompleteSubtasks = selectedTask.subtasks && selectedTask.subtasks.length > 0 && selectedTask.subtasks.some((s) => !s.completed);
+                  const userCanManage = canManageTask(selectedTask);
+                  const hasIncompleteSubtasks = !userCanManage && selectedTask.subtasks && selectedTask.subtasks.length > 0 && selectedTask.subtasks.some((s) => !s.completed);
 
                   return (
                     <select
@@ -1181,10 +1662,10 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         selectedTask.status
                       )}`}
                     >
-                      <option value="todo" disabled={!isTodo && !isAdminMode}>To Do</option>
-                      <option value="in_progress" disabled={isCompleted && !isAdminMode}>In Progress</option>
+                      <option value="todo" disabled={!isTodo && !userCanManage}>To Do</option>
+                      <option value="in_progress" disabled={isCompleted && !userCanManage}>In Progress</option>
                       <option value="completed">Completed</option>
-                      <option value="cancelled" disabled={isCompleted && !isAdminMode}>Cancelled</option>
+                      <option value="cancelled" disabled={isCompleted && !userCanManage}>Cancelled</option>
                     </select>
                   );
                 })() : (
@@ -1244,9 +1725,9 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
             {selectedTask.description && (
               <div>
                 <h5 className="text-xs font-extrabold text-slate-800 mb-1">Work Description</h5>
-                <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 whitespace-pre-wrap leading-relaxed">
+                <div className="text-xs text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">
                   {selectedTask.description}
-                </p>
+                </div>
               </div>
             )}
 
@@ -1261,14 +1742,14 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                 </div>
                 <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
                   {selectedTask.subtasks.map((st) => {
-                    const canEditChecklist = isTaskAssignee(selectedTask);
+                    const canEditChecklist = canUpdateTaskStatus(selectedTask);
                     return (
                       <label
                         key={st.id}
                         className={`flex items-center justify-between p-2 bg-white rounded-md border border-slate-100 text-xs transition-colors ${
                           canEditChecklist ? 'cursor-pointer hover:bg-slate-50' : 'cursor-not-allowed opacity-90'
                         }`}
-                        title={!canEditChecklist ? 'Only the assigned employee performing this task can update checklist items' : undefined}
+                        title={!canEditChecklist ? 'Only assigned employee or management can update checklist items' : undefined}
                       >
                         <div className="flex items-center gap-2">
                           <input
@@ -1285,7 +1766,7 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
                         {st.completed ? (
                           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                         ) : !canEditChecklist ? (
-                          <span className="text-[10px] text-slate-400 font-medium italic">Pending Assignee</span>
+                          <span className="text-[10px] text-slate-400 font-medium italic">Pending</span>
                         ) : null}
                       </label>
                     );
@@ -1305,19 +1786,32 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
 
             {/* FOOTER ACTIONS */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              {(isAdminMode || !isEmployeeMode || selectedTask.assigner_id === user?.id) ? (
-                <button
-                  onClick={() => handleDeleteTask(selectedTask.id)}
-                  className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Delete task from organization database"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete Task</span>
-                </button>
+              {canManageTask(selectedTask) ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      openEditModal(selectedTask);
+                    }}
+                    className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Edit task details"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Edit Task</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteTask(selectedTask.id)}
+                    className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Delete task from organization database"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Task</span>
+                  </button>
+                </div>
               ) : <div />}
 
               <div className="flex items-center gap-2">
-                {selectedTask.status !== 'completed' && (
+                {selectedTask.status !== 'completed' && canUpdateTaskStatus(selectedTask) && (
                   <button
                     onClick={() => {
                       handleStatusChange(selectedTask.id, 'completed');
