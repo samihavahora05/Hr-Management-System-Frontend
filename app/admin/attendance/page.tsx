@@ -238,6 +238,91 @@ export default function AdminAttendancePage() {
     }
   };
 
+  // Date & Search Filtering State
+  const [datePreset, setDatePreset] = useState<'all' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom'>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getYesterdayStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getThisWeekRange = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const fmt = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    return { start: fmt(monday), end: fmt(sunday) };
+  };
+
+  const getThisMonthRange = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    return {
+      start: `${year}-${month}-01`,
+      end: `${year}-${month}-${String(lastDay).padStart(2, '0')}`,
+    };
+  };
+
+  const handlePresetSelect = (preset: 'all' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom') => {
+    setDatePreset(preset);
+    if (preset === 'all') {
+      setStartDate('');
+      setEndDate('');
+    } else if (preset === 'today') {
+      const today = getTodayStr();
+      setStartDate(today);
+      setEndDate(today);
+    } else if (preset === 'yesterday') {
+      const yesterday = getYesterdayStr();
+      setStartDate(yesterday);
+      setEndDate(yesterday);
+    } else if (preset === 'this_week') {
+      const { start, end } = getThisWeekRange();
+      setStartDate(start);
+      setEndDate(end);
+    } else if (preset === 'this_month') {
+      const { start, end } = getThisMonthRange();
+      setStartDate(start);
+      setEndDate(end);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setDatePreset('all');
+    setStartDate('');
+    setEndDate('');
+    setStatusFilter('all');
+    setSearchQuery('');
+  };
+
   const handleExportExcel = () => {
     if (filteredAttendances.length === 0) {
       setToastMessage('No attendance records available to export.');
@@ -258,14 +343,36 @@ export default function AdminAttendancePage() {
   };
 
   const filteredAttendances = attendances.filter((a) => {
-    if (statusFilter === 'all') return true;
     const itemDate = formatDate(a.date);
-    const todayStr = getTodayStr();
-    if (statusFilter === 'present') {
-      return (a.status === 'present' || a.status === 'late') && itemDate === todayStr;
+
+    // Date range filter
+    if (startDate && itemDate < startDate) return false;
+    if (endDate && itemDate > endDate) return false;
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'present') {
+        if (a.status !== 'present' && a.status !== 'late') return false;
+      } else if (a.status !== statusFilter) {
+        return false;
+      }
     }
-    return a.status === statusFilter && itemDate === todayStr;
+
+    // Search query filter (name, employee code, notes)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const name = (a.user?.name || '').toLowerCase();
+      const code = (a.user?.employee_code || '').toLowerCase();
+      const notes = (a.notes || '').toLowerCase();
+      if (!name.includes(q) && !code.includes(q) && !notes.includes(q)) {
+        return false;
+      }
+    }
+
+    return true;
   });
+
+  const isFilterActive = datePreset !== 'all' || startDate !== '' || endDate !== '' || statusFilter !== 'all' || searchQuery.trim() !== '';
 
   if (viewMode === 'monthly') {
     return (
@@ -432,18 +539,158 @@ export default function AdminAttendancePage() {
         </div>
       )}
 
-      {/* FILTER ACTIVE RESET BANNER */}
-      {statusFilter !== 'all' && (
-        <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 px-4 py-2.5 rounded-xl mb-4 text-xs font-semibold text-indigo-900 shadow-2xs">
-          <span>Filtering today's logs by status: <strong className="uppercase font-extrabold tracking-wide">{statusFilter.replace('_', ' ')} TODAY</strong></span>
-          <button
-            onClick={() => setStatusFilter('all')}
-            className="text-indigo-700 hover:text-indigo-950 font-extrabold underline cursor-pointer"
-          >
-            Clear Filter (Show All History)
-          </button>
+      {/* COMPREHENSIVE DATE & SEARCH FILTER BAR */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 mb-5 shadow-2xs space-y-3.5">
+        {/* Row 1: Quick Date Presets & Status Selector */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1">
+              <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+              <span>Date:</span>
+            </span>
+
+            {[
+              { id: 'all', label: 'All History' },
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: 'this_week', label: 'This Week' },
+              { id: 'this_month', label: 'This Month' },
+              { id: 'custom', label: 'Custom Range' },
+            ].map((p) => {
+              const active = datePreset === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => handlePresetSelect(p.id as any)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-[#0f365e] text-white shadow-2xs scale-95'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="text-xs bg-slate-50 border border-slate-200 font-bold rounded-xl px-3 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-[#0f365e] focus:bg-white transition-all cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              <option value="present">Present (On-Time & Late)</option>
+              <option value="late">Late Only</option>
+              <option value="on_leave">On Leave</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
         </div>
-      )}
+
+        {/* Row 2: Date Range Inputs, Search Input, and Reset */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 pt-3 border-t border-slate-100">
+          {/* Employee Live Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <input
+              type="text"
+              placeholder="Search by employee name, code, notes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-3.5 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#0f365e] focus:ring-2 focus:ring-[#0f365e]/20 outline-none transition-all font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Date Pickers (From / To) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">From</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setDatePreset('custom');
+                }}
+                className="text-xs bg-transparent border-0 font-bold text-slate-800 outline-none cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">To</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setDatePreset('custom');
+                }}
+                className="text-xs bg-transparent border-0 font-bold text-slate-800 outline-none cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Reset All Filters Button */}
+          {isFilterActive && (
+            <button
+              onClick={handleResetFilters}
+              className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+              title="Reset all filters and show full history"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Reset Filters</span>
+            </button>
+          )}
+        </div>
+
+        {/* Active Filter Chips / Status Feedback */}
+        {isFilterActive && (
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-100 text-[11px] font-semibold text-slate-600">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-slate-400">Active Filters:</span>
+              {startDate && endDate && (
+                <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-[#0f365e] rounded-md font-bold">
+                  📅 {startDate === endDate ? `Date: ${startDate}` : `${startDate} → ${endDate}`}
+                </span>
+              )}
+              {startDate && !endDate && (
+                <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-[#0f365e] rounded-md font-bold">
+                  📅 From {startDate}
+                </span>
+              )}
+              {!startDate && endDate && (
+                <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-[#0f365e] rounded-md font-bold">
+                  📅 Up to {endDate}
+                </span>
+              )}
+              {statusFilter !== 'all' && (
+                <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md font-bold uppercase">
+                  ⚡ Status: {statusFilter.replace('_', ' ')}
+                </span>
+              )}
+              {searchQuery && (
+                <span className="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-md font-bold">
+                  🔍 "{searchQuery}"
+                </span>
+              )}
+            </div>
+
+            <span className="text-slate-500 font-bold">
+              Showing <strong>{filteredAttendances.length}</strong> {filteredAttendances.length === 1 ? 'record' : 'records'}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* ATTENDANCE TABLE */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
@@ -452,8 +699,16 @@ export default function AdminAttendancePage() {
             Fetching organization attendance history...
           </div>
         ) : filteredAttendances.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500 font-medium">
-            No attendance records found matching status filter "{statusFilter.toUpperCase()}".
+          <div className="p-8 text-center text-xs text-slate-500 font-medium space-y-2">
+            <p>No attendance records found matching the active filters.</p>
+            {isFilterActive && (
+              <button
+                onClick={handleResetFilters}
+                className="text-xs font-bold text-[#0f365e] hover:underline cursor-pointer"
+              >
+                Clear all filters to view full history
+              </button>
+            )}
           </div>
         ) : (
           <TablePrimitive
