@@ -223,23 +223,24 @@ export function Topbar() {
 
   const isDirectoryActive = pathname.startsWith(directoryHref);
   const isReportsActive = pathname.startsWith(reportsHref);
-
   const hasCheckedIn = !!todayAttendance?.check_in;
   const hasCheckedOut = !!todayAttendance?.check_out;
 
   return (
-    <header className="h-14 sm:h-16 bg-white border-b border-[#c3c6cf] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs text-xs">
-      {/* Mobile Hamburger & Title & Search */}
-      <div className="flex items-center gap-2 sm:gap-6 min-w-0">
+    <>
+      <header className="h-14 sm:h-16 bg-white border-b border-[#c3c6cf] px-2 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs text-xs gap-2">
+        {/* Mobile Hamburger & Title & Search */}
+        <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
         <button
           onClick={toggleMobileMenu}
           aria-label="Open mobile navigation menu"
-          className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-[#0f365e] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
+          className="md:hidden p-1.5 text-slate-700 hover:text-[#0f365e] hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
+          title="Open navigation menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5 text-slate-800" />
         </button>
 
-        <span className="font-extrabold text-[#0f365e] text-base sm:text-lg tracking-tight truncate">
+        <span className="font-extrabold text-[#0f365e] text-sm sm:text-base md:text-lg tracking-tight shrink-0">
           HRMS<span className="hidden sm:inline"> Portal</span>
         </span>
 
@@ -254,7 +255,7 @@ export function Topbar() {
       </div>
 
       {/* Directory & Reports Navigation & Controls */}
-      <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-3 md:gap-6 shrink-0">
         <div className="hidden lg:flex items-center gap-6 text-sm font-bold text-slate-600 h-16">
           <Link
             href={directoryHref}
@@ -283,13 +284,13 @@ export function Topbar() {
         {/* CHECK IN & CHECK OUT BUTTONS */}
         {loadingAttendance ? (
           <div className="flex items-center">
-            <div className="px-2 sm:px-3 py-1 bg-slate-100 text-slate-400 rounded-lg text-[11px] sm:text-xs font-medium animate-pulse">
+            <div className="px-1.5 sm:px-3 py-0.5 sm:py-1 bg-slate-100 text-slate-400 rounded-lg text-[10px] sm:text-xs font-medium animate-pulse">
               <span className="hidden sm:inline">Syncing attendance...</span>
               <span className="sm:hidden">Syncing...</span>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {(() => {
               const shiftEndTime = user?.shift?.end_time || '18:00:00';
               const isSaturday = new Date().getDay() === 6;
@@ -303,54 +304,54 @@ export function Topbar() {
                 <>
                   {/* Check In Status / Button */}
                   {hasCheckedIn ? (
-                    <div className="px-2 sm:px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <div className="px-1.5 sm:px-3 py-0.5 sm:py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-lg flex items-center gap-1 text-[10px] sm:text-xs select-none">
+                      <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 shrink-0" />
                       <span className="whitespace-nowrap">In: {formatTimeDisplay(todayAttendance.check_in)}</span>
                     </div>
                   ) : isPastAutoCheckout ? (
-                    <div className="px-2 sm:px-3 py-1 bg-slate-100 border border-slate-200 text-slate-400 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none cursor-not-allowed" title="Shift ended. Check-in closed for today.">
-                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <div className="px-1.5 sm:px-3 py-0.5 sm:py-1 bg-slate-100 border border-slate-200 text-slate-400 font-bold rounded-lg flex items-center gap-1 text-[10px] sm:text-xs select-none cursor-not-allowed" title="Shift ended. Check-in closed for today.">
+                      <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
                       <span className="whitespace-nowrap">Ended</span>
                     </div>
                   ) : (
                     <button
                       onClick={handleCheckIn}
                       disabled={checkingIn}
-                      className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-lg shadow-2xs transition-all cursor-pointer text-xs disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-2 sm:px-3.5 py-1 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-lg shadow-2xs transition-all cursor-pointer text-[11px] sm:text-xs disabled:opacity-50 flex items-center gap-1"
                       title="Record your daily check-in time"
                     >
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                       <span className="whitespace-nowrap">{checkingIn ? 'Recording...' : 'Check In'}</span>
                     </button>
                   )}
 
                   {/* Check Out Status / Button */}
                   {hasCheckedOut ? (
-                    <div className="px-2 sm:px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none cursor-default" title={todayAttendance.notes || 'Attendance checked out'}>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <div className="px-1.5 sm:px-3 py-0.5 sm:py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1 text-[10px] sm:text-xs select-none cursor-default" title={todayAttendance.notes || 'Attendance checked out'}>
+                      <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0" />
                       <span className="whitespace-nowrap">Out: {formatTimeDisplay(todayAttendance.check_out)}</span>
                       {todayAttendance.notes?.includes('Auto check-out') && (
-                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5 hidden sm:inline">Auto</span>
+                        <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5 hidden sm:inline">Auto</span>
                       )}
                     </div>
                   ) : hasCheckedIn && isPastAutoCheckout ? (
-                    <div className="px-2 sm:px-3 py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1 text-[11px] sm:text-xs select-none cursor-default" title="Shift ended. Auto check-out triggered.">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <div className="px-1.5 sm:px-3 py-0.5 sm:py-1 bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-lg flex items-center gap-1 text-[10px] sm:text-xs select-none cursor-default" title="Shift ended. Auto check-out triggered.">
+                      <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0" />
                       <span className="whitespace-nowrap">Out: {formatTimeDisplay(effectiveCutoffTime)}</span>
-                      <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5 hidden sm:inline">Auto</span>
+                      <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1 rounded font-semibold ml-0.5 hidden sm:inline">Auto</span>
                     </div>
                   ) : (
                     <button
                       onClick={handleCheckOut}
                       disabled={checkingOut || !hasCheckedIn}
-                      className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 font-bold rounded-lg shadow-2xs transition-all text-xs flex items-center gap-1.5 ${
+                      className={`px-2 sm:px-3.5 py-1 sm:py-1.5 font-bold rounded-lg shadow-2xs transition-all text-[11px] sm:text-xs flex items-center gap-1 ${
                         hasCheckedIn
                           ? 'bg-rose-600 hover:bg-rose-700 active:scale-95 text-white cursor-pointer'
                           : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                       }`}
                       title={!hasCheckedIn ? 'Must check in first before checking out' : 'Record your daily check-out time'}
                     >
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                       <span className="whitespace-nowrap">{checkingOut ? 'Recording...' : 'Check Out'}</span>
                     </button>
                   )}
@@ -361,17 +362,17 @@ export function Topbar() {
         )}
 
         {/* User Account Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-3 border-l border-[#c3c6cf] pl-2 sm:pl-4 relative">
+        <div className="flex items-center gap-1 sm:gap-2.5 border-l border-[#c3c6cf] pl-1.5 sm:pl-3 relative">
           {/* Notifications Dropdown Toggle */}
           <div className="relative">
             <button
               onClick={handleToggleNotifDropdown}
-              className="text-slate-500 hover:text-[#0f365e] transition-colors relative p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+              className="text-slate-500 hover:text-[#0f365e] transition-colors relative p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
               title="Notifications"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[15px] h-[15px] px-0.5 bg-rose-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs animate-pulse">
+                <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 bg-rose-600 text-white rounded-full text-[8px] font-black flex items-center justify-center shadow-xs animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -463,7 +464,7 @@ export function Topbar() {
 
           <Link
             href={activeNamespace === 'admin' ? '/admin/settings' : `/${activeNamespace}/dashboard`}
-            className="text-slate-500 hover:text-[#0f365e] transition-colors p-1"
+            className="hidden sm:inline-flex text-slate-500 hover:text-[#0f365e] transition-colors p-1"
             title="Settings"
           >
             <Settings className="w-4 h-4" />
@@ -471,7 +472,7 @@ export function Topbar() {
 
           <Link
             href="/profile"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-xs flex items-center justify-center shadow-2xs transition-all ring-offset-1 hover:ring-2 hover:ring-[#0f365e] cursor-pointer shrink-0"
+            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#0f365e] hover:bg-[#164677] active:scale-95 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center shadow-2xs transition-all ring-offset-1 hover:ring-2 hover:ring-[#0f365e] cursor-pointer shrink-0"
             title={`${user?.name || 'User'} (My Profile)`}
           >
             {user?.name ? user.name[0] : 'U'}
@@ -486,6 +487,7 @@ export function Topbar() {
           </button>
         </div>
       </div>
+    </header>
 
       <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
 
@@ -557,6 +559,6 @@ export function Topbar() {
           </div>
         )}
       </Modal>
-    </header>
+    </>
   );
 }
