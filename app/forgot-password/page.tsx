@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth, getRoleDefaultRoute } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
 import {
   Mail,
@@ -12,22 +11,22 @@ import {
   EyeOff,
   ShieldCheck,
 } from '@/components/ui/Icon';
-import { Toast } from '@/components/ui/Toast';
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Dynamic Company Branding
   const [companyLogo, setCompanyLogo] = useState<string>('/images/logoblue.png');
   const [companyName, setCompanyName] = useState<string>('BlueBoxx DA Pvt. Ltd.');
 
-  const { login } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -39,22 +38,49 @@ export default function LoginPage() {
       .catch(() => null);
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter a new password.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('The new password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password !== passwordConfirmation) {
+      setError('The new password and confirmation password do not match.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const data = await fetchApi('/auth/login', {
+      const data = await fetchApi('/auth/forgot-password', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({
+          email: cleanEmail,
+          password: password,
+          password_confirmation: passwordConfirmation,
+        }),
       });
 
-      login(data.token, data.user);
-      const targetRoute = getRoleDefaultRoute(data.user?.role);
-      window.location.href = targetRoute;
+      setSuccessMessage(data.message || 'Password changed successfully! You can now sign in.');
+      setPassword('');
+      setPasswordConfirmation('');
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+      setError(err.message || 'Unable to reset password. Please check your details.');
     } finally {
       setSubmitting(false);
     }
@@ -75,28 +101,53 @@ export default function LoginPage() {
         <span className="text-[11px] font-medium text-slate-400">v4.2 Enterprise</span>
       </header>
 
-      {/* Main Login Card */}
+      {/* Main Card */}
       <main className="w-full max-w-md mx-auto my-auto py-6">
         <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xl shadow-slate-200/40">
           {/* Header */}
           <div className="mb-6 text-left">
             <h1 className="font-display text-[2.1rem] sm:text-[2.25rem] font-semibold text-slate-900 tracking-tight leading-tight">
-              Welcome back
+              Reset Password
             </h1>
             <p className="text-sm text-slate-500 mt-1.5 font-normal">
-              Enter your details to sign in to your portal.
+              Enter your registered email and choose a new password.
             </p>
           </div>
 
+          {/* Success Notice */}
+          {successMessage && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-medium space-y-2">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{successMessage}</span>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition-colors shadow-xs"
+                >
+                  Proceed to Sign in
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Error Notice */}
           {error && (
-            <div className="mb-6 p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-              {error}
+            <div className="mb-6 p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start gap-2">
+              <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-2 tracking-wide">
                 Email address
@@ -117,7 +168,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-2 tracking-wide">
-                Password
+                New Password
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -127,8 +178,9 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0f365e] focus:ring-1 focus:ring-[#0f365e] transition-all"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  minLength={8}
                 />
                 <button
                   type="button"
@@ -141,33 +193,53 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 text-slate-600 font-medium cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-[#0f365e] focus:ring-[#0f365e] cursor-pointer"
-                />
-                <span>Remember for 30 days</span>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-2 tracking-wide">
+                Confirm Password
               </label>
-
-              <Link
-                href="/forgot-password"
-                className="font-semibold text-[#0f365e] hover:underline underline-offset-2 cursor-pointer"
-              >
-                Forgot password?
-              </Link>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={passwordConfirmation}
+                  onChange={(e) => setPasswordConfirmation(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0f365e] focus:ring-1 focus:ring-[#0f365e] transition-all"
+                  placeholder="Re-enter your new password"
+                  autoComplete="new-password"
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer select-none"
+                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-3">
               <button
                 type="submit"
                 disabled={submitting}
                 className="w-full py-3 bg-[#0f365e] hover:bg-[#164677] active:scale-[0.99] text-white text-sm font-semibold rounded-lg shadow-xs transition-all duration-150 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {submitting ? 'Signing in…' : 'Sign in'}
+                {submitting ? 'Changing password…' : 'Change Password'}
               </button>
+
+              <div className="text-center pt-1">
+                <Link
+                  href="/login"
+                  className="text-xs font-semibold text-[#0f365e] hover:underline underline-offset-2 transition-colors inline-flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to Sign in
+                </Link>
+              </div>
             </div>
           </form>
         </div>
@@ -183,8 +255,6 @@ export default function LoginPage() {
           © 2026 BlueBoxx Business Solutions Pvt Ltd.
         </p>
       </footer>
-
-      <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
     </div>
   );
 }
