@@ -43,76 +43,76 @@ export function HRDashboard({ leaveRequests }: HRDashboardProps) {
   return (
     <div className="space-y-6 text-slate-900">
       {/* HR TASK & EMPLOYEES METRIC CARDS ROW */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Link
           href="/hr/employees"
-          className="group bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="group-hover:text-slate-900 transition-colors">Employees Under HR</span>
-            <Users className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+            <span className="group-hover:text-slate-900 transition-colors truncate">Employees Under HR</span>
+            <Users className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-slate-900 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
               {counts.total_employees || 0}
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
         </Link>
 
         <Link
           href="/hr/tasks"
-          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="group-hover:text-indigo-600 transition-colors">HR Assigned Tasks</span>
-            <ListTodo className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+            <span className="group-hover:text-indigo-600 transition-colors truncate">HR Assigned Tasks</span>
+            <ListTodo className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-indigo-700 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-indigo-700 font-mono">
               {tasks.total || 0}
             </div>
-            <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
         </Link>
 
         <Link
           href="/hr/tasks"
-          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="group-hover:text-emerald-600 transition-colors">Completed Tasks</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+            <span className="group-hover:text-emerald-600 transition-colors truncate">Completed Tasks</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-emerald-700 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono">
               {tasks.completed || 0}
             </div>
-            <ChevronRight className="w-4 h-4 text-emerald-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-emerald-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
         </Link>
 
         <Link
           href="/hr/tasks"
-          className="group bg-white border border-slate-200 hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-            <span className="group-hover:text-sky-600 transition-colors">Employee Completion Rate</span>
-            <TrendingUp className="w-4 h-4 text-sky-500 group-hover:scale-110 transition-transform" />
+            <span className="group-hover:text-sky-600 transition-colors truncate">Completion Rate</span>
+            <TrendingUp className="w-4 h-4 text-sky-500 group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-sky-700 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-sky-700 font-mono">
               {tasks.completion_rate || 0}%
             </div>
-            <ChevronRight className="w-4 h-4 text-sky-300 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-sky-300 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
         </Link>
       </div>
 
       {/* RECENT HR TASKS & SHORTCUTS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               Recent HR Work Tasks
             </h3>
@@ -128,14 +128,14 @@ export function HRDashboard({ leaveRequests }: HRDashboardProps) {
           ) : (
             <div className="space-y-3">
               {recentTasks.map((t: any) => (
-                <div key={t.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                  <div>
-                    <p className="font-extrabold text-slate-900">{t.title}</p>
+                <div key={t.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                  <div className="min-w-0">
+                    <p className="font-extrabold text-slate-900 truncate">{t.title}</p>
                     <p className="text-[10px] text-slate-500 mt-0.5">
                       Assigned to: <strong>{t.assignedTo?.name || 'Employee'}</strong> ({t.assignedTo?.department || 'HR Staff'}) • Due: {t.due_date || 'N/A'}
                     </p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize bg-white text-slate-700">
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize bg-white text-slate-700 shrink-0 self-start sm:self-center">
                     {t.status}
                   </span>
                 </div>
@@ -144,7 +144,7 @@ export function HRDashboard({ leaveRequests }: HRDashboardProps) {
           )}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs space-y-4">
           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             HR Control Actions
           </h3>

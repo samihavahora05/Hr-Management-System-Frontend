@@ -63,9 +63,9 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6 text-slate-900 animate-in fade-in duration-200">
       {/* COMMAND CENTER TOP BANNER */}
-      <div className="bg-gradient-to-r from-[#0f365e] to-[#1e548a] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#0f365e] to-[#1e548a] rounded-2xl p-4 sm:p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold tracking-wider uppercase">
               Command Center
             </span>
@@ -73,7 +73,7 @@ export function AdminDashboard() {
               {stats?.organization?.name || 'Organization Headquarters'}
             </span>
           </div>
-          <h2 className="text-xl font-black tracking-tight">Organization Overview & Operations</h2>
+          <h2 className="text-lg sm:text-xl font-black tracking-tight">Organization Overview & Operations</h2>
           <p className="text-xs text-indigo-100 mt-1 max-w-xl">
             Real-time workforce intelligence, pending approvals, attendance compliance, and AI-assisted governance.
           </p>
@@ -89,17 +89,17 @@ export function AdminDashboard() {
       </div>
 
       {/* 4 PRIMARY METRIC TILES ROW */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Link
           href="/admin/users"
-          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
-            <span className="group-hover:text-slate-900 transition-colors">Total Workforce</span>
-            <Users className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+            <span className="group-hover:text-slate-900 transition-colors truncate">Total Workforce</span>
+            <Users className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-slate-900 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
               {headcount.total}
             </div>
             <span className="text-[11px] font-bold text-emerald-600">
@@ -113,14 +113,14 @@ export function AdminDashboard() {
 
         <Link
           href="/admin/attendance"
-          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
-            <span className="group-hover:text-emerald-700 transition-colors">Today Attendance</span>
-            <Clock className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+            <span className="group-hover:text-emerald-700 transition-colors truncate">Today Attendance</span>
+            <Clock className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-emerald-700 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono">
               {attendance.today_present}
             </div>
             <span className="text-[11px] font-bold text-slate-600 font-mono">
@@ -134,17 +134,17 @@ export function AdminDashboard() {
 
         <Link
           href="/admin/leave"
-          className="group bg-white border border-slate-200 hover:border-amber-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-amber-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
-            <span className="group-hover:text-amber-700 transition-colors">Pending Approvals</span>
-            <AlertTriangle className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+            <span className="group-hover:text-amber-700 transition-colors truncate">Pending Approvals</span>
+            <AlertTriangle className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-amber-600 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-amber-600 font-mono">
               {pending.total_pending}
             </div>
-            <ChevronRight className="w-4 h-4 text-amber-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-amber-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
           <p className="text-[10px] text-slate-400 mt-2 font-medium">
             {pending.leave_requests} leaves, {pending.expense_claims} claims
@@ -153,18 +153,18 @@ export function AdminDashboard() {
 
         <Link
           href="/hr/recruitment"
-          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-5 shadow-2xs block cursor-pointer"
+          className="group bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 text-[10px] font-extrabold uppercase tracking-wider">
-            <span className="group-hover:text-indigo-700 transition-colors">Recruitment ATS</span>
-            <UserCheck className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+            <span className="group-hover:text-indigo-700 transition-colors truncate">Recruitment ATS</span>
+            <UserCheck className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <div className="text-3xl font-black text-indigo-700 font-mono">
+          <div className="flex items-baseline justify-between mt-2 flex-wrap gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-indigo-700 font-mono">
               {recruitment.active_openings}
             </div>
             <span className="text-[11px] font-bold text-indigo-600">
-              {recruitment.active_candidates} In Pipeline
+              {recruitment.active_candidates} Pipeline
             </span>
           </div>
           <p className="text-[10px] text-slate-400 mt-2 font-medium">
@@ -176,11 +176,11 @@ export function AdminDashboard() {
       {/* QUICK ACTIONS & RECENT ACTIVITY GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* QUICK ACTIONS PANEL */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-extrabold text-slate-900 mb-1">Administrative Shortcuts</h3>
             <p className="text-xs text-slate-500 mb-4">Direct shortcuts to governance facilities</p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-xs">
               <Link
                 href="/admin/assistant"
                 className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
@@ -211,7 +211,7 @@ export function AdminDashboard() {
               </Link>
               <Link
                 href="/admin/audit-logs"
-                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+                className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2 transition-colors cursor-pointer sm:col-span-2"
               >
                 <FileText className="w-4 h-4 text-slate-700 shrink-0" />
                 <span>Audit Trail</span>
@@ -229,8 +229,8 @@ export function AdminDashboard() {
         </div>
 
         {/* RECENT ORGANIZATION ACTIVITY LOG */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xs">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">Recent Organization Activity</h3>
               <p className="text-xs text-slate-500">Live immutable audit trail of system events</p>
@@ -253,22 +253,22 @@ export function AdminDashboard() {
               {recentActivity.map((log: any) => (
                 <div
                   key={log.id}
-                  className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between"
+                  className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-extrabold text-[11px] flex items-center justify-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-extrabold text-[11px] flex items-center justify-center shrink-0">
                       {(log.actor?.name || 'S')[0]}
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 capitalize">
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 capitalize truncate">
                         {String(log.action).replace(/_/g, ' ')}
                       </p>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-[10px] text-slate-500 truncate">
                         by <span className="font-semibold text-slate-700">{log.actor?.name || 'System Admin'}</span>
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <span className="text-[10px] text-slate-400 font-mono shrink-0 sm:self-center">
                     {log.created_at ? String(log.created_at).slice(0, 16).replace('T', ' ') : 'Recent'}
                   </span>
                 </div>

@@ -15,9 +15,9 @@ export function PortalLayout({ children, namespace }: PortalLayoutProps) {
     <RoleGuard requiredNamespace={namespace}>
       <div className="flex min-h-screen bg-slate-50 text-slate-900">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 w-full">
           <Topbar />
-          <main className="p-6 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-200">
+          <main className="p-3 sm:p-5 md:p-8 max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden animate-in fade-in duration-200">
             {children}
           </main>
         </div>

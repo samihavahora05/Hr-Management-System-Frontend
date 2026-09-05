@@ -60,13 +60,13 @@ export function TablePrimitive({
     }
 
     return (
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-        <div className="overflow-x-auto">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs w-full min-w-0">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 {headers.map((h, idx) => (
-                  <th key={idx} className="px-5 py-3.5">
+                  <th key={idx} className="px-3 sm:px-5 py-2.5 sm:py-3.5 whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -76,7 +76,7 @@ export function TablePrimitive({
               {rows.map((row, rIdx) => (
                 <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors duration-150">
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-5 py-3.5">
+                    <td key={cIdx} className="px-3 sm:px-5 py-2.5 sm:py-3.5">
                       {cell}
                     </td>
                   ))}
@@ -92,20 +92,20 @@ export function TablePrimitive({
   // Handle columns + data pattern
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs w-full min-w-0">
         <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-      <div className="overflow-x-auto">
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs w-full min-w-0">
+      <div className="overflow-x-auto w-full">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
             <tr>
               {(columns || []).map((col) => (
-                <th key={col.key} className={`px-5 py-3.5 ${col.className || ''}`}>
+                <th key={col.key} className={`px-3 sm:px-5 py-2.5 sm:py-3.5 whitespace-nowrap ${col.className || ''}`}>
                   {col.header}
                 </th>
               ))}
@@ -118,7 +118,7 @@ export function TablePrimitive({
                 className="hover:bg-slate-50/80 transition-colors duration-150"
               >
                 {(columns || []).map((col) => (
-                  <td key={col.key} className={`px-5 py-3.5 ${col.className || ''}`}>
+                  <td key={col.key} className={`px-3 sm:px-5 py-2.5 sm:py-3.5 ${col.className || ''}`}>
                     {col.render ? col.render(item) : item[col.key]}
                   </td>
                 ))}

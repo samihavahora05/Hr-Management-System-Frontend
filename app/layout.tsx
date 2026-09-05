@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   description: 'Role-aware HR Management System for Attendance, Leave, Tasks, Performance & AI Insights',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({
   children,
 }: {

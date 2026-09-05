@@ -61,6 +61,9 @@ interface ThemeContextType {
   setAccentTheme: (preset: ThemePreset) => void;
   isCollapsed: boolean;
   toggleSidebarCollapse: () => void;
+  isMobileMenuOpen: boolean;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -68,6 +71,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [activePreset, setActivePreset] = useState<ThemePreset>('navy');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const savedPreset = localStorage.getItem('hr_theme_accent') as ThemePreset;
@@ -107,6 +111,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((prev) => !prev);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <ThemeContext.Provider
       value={{
@@ -114,6 +126,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setAccentTheme,
         isCollapsed,
         toggleSidebarCollapse,
+        isMobileMenuOpen,
+        toggleMobileMenu,
+        closeMobileMenu,
       }}
     >
       {children}
