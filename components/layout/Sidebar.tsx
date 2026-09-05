@@ -158,6 +158,7 @@ export function Sidebar() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
+    if (!token || !user) return;
     let isMounted = true;
     const fetchUnreadNotifications = async () => {
       try {
@@ -176,7 +177,7 @@ export function Sidebar() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [pathname]);
+  }, [pathname, user, token]);
 
   const currentMenuItems = menuItemsMap[activeNamespace] || menuItemsMap.employee;
 

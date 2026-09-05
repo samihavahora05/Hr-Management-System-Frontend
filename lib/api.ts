@@ -78,7 +78,9 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     if (res.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     throw new Error(data.message || 'An error occurred while fetching data');
   }
