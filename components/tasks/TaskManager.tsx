@@ -236,13 +236,15 @@ export function TaskManager({ portalScope = 'employee' }: TaskManagerProps) {
   const handleDeleteTask = async (taskId: number) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
     try {
-      await fetchApi(`/tasks/${taskId}`, { method: 'DELETE' });
-      setToastMessage('Task deleted');
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
       setIsDetailModalOpen(false);
       setSelectedTask(null);
+      const res = await fetchApi(`/tasks/${taskId}`, { method: 'DELETE' });
+      setToastMessage(res?.message || 'Task deleted successfully');
       await loadTasks();
     } catch (err: any) {
-      setToastMessage(err.message || 'Deletion failed');
+      setToastMessage(err.message || 'Failed to delete task');
+      await loadTasks();
     }
   };
 

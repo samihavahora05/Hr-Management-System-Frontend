@@ -50,7 +50,8 @@ export default function LoginPage() {
       });
 
       login(data.token, data.user);
-      router.push(getRoleDefaultRoute(data.user?.role));
+      const targetRoute = getRoleDefaultRoute(data.user?.role);
+      window.location.href = targetRoute;
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {
