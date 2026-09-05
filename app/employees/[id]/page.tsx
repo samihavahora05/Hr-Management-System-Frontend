@@ -473,6 +473,8 @@ export default function EmployeeDetailPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
       {/* DOCUMENT PREVIEW MODAL */}
       <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc?.title || ''}`} maxWidth="5xl">
         <div className="space-y-3">
