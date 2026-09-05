@@ -32,7 +32,7 @@ import {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { isCollapsed, toggleSidebarCollapse } = useTheme();
   const [showPortalMenu, setShowPortalMenu] = useState(false);
 
