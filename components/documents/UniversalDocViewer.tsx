@@ -95,13 +95,13 @@ export function UniversalDocViewer({
   onDownload,
 }: UniversalDocViewerProps) {
   const ext = (fileName.split('.').pop() || '').toLowerCase();
-  
-  // Detect file category
-  const isPdf = ext === 'pdf' || contentType.includes('pdf');
-  const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp'].includes(ext) || contentType.includes('image');
+
+  // Detect file category strictly
   const isExcel = ['xlsx', 'xls', 'csv'].includes(ext) || contentType.includes('spreadsheet') || contentType.includes('excel') || contentType.includes('csv');
-  const isDocx = ['docx', 'doc'].includes(ext) || contentType.includes('wordprocessingml') || contentType.includes('msword');
-  const isText = ['txt', 'json', 'log', 'md', 'xml', 'sql'].includes(ext) || (contentType.includes('text') && !isExcel);
+  const isDocx = !isExcel && (['docx', 'doc'].includes(ext) || contentType.includes('wordprocessingml') || contentType.includes('msword'));
+  const isImage = !isExcel && !isDocx && (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp'].includes(ext) || contentType.includes('image'));
+  const isPdf = !isExcel && !isDocx && !isImage && (ext === 'pdf' || contentType.includes('pdf'));
+  const isText = !isExcel && !isDocx && !isImage && !isPdf && (['txt', 'json', 'log', 'md', 'xml', 'sql'].includes(ext) || contentType.includes('text'));
 
   // Common UI State
   const [loading, setLoading] = useState(true);
@@ -331,11 +331,18 @@ export function UniversalDocViewer({
       {/* ─── 3. PDF VIEWER ─────────────────────────────────────────────────────────── */}
       {!loading && !error && isPdf && (
         <div className="flex-1 flex flex-col w-full h-full bg-slate-900/5 relative">
-          <iframe
-            src={`${url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+          <object
+            data={url}
+            type="application/pdf"
             className="w-full flex-1 border-0 bg-white"
             title={title || 'PDF Document Viewer'}
-          />
+          >
+            <iframe
+              src={url}
+              className="w-full flex-1 border-0 bg-white"
+              title={title || 'PDF Document Viewer'}
+            />
+          </object>
         </div>
       )}
 

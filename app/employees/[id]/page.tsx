@@ -477,85 +477,87 @@ export default function EmployeeDetailPage() {
       </Modal>
 
       {/* DOCUMENT PREVIEW MODAL */}
-      <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc?.title || ''}`} maxWidth="5xl">
-        <div className="space-y-3">
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-slate-900 text-sm">{previewDoc?.title}</span>
-                <span className="px-2 py-0.5 bg-[#0f365e]/10 text-[#0f365e] font-bold text-[10px] rounded-md capitalize">
-                  {previewDoc?.type?.replace('_', ' ')}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Uploaded for: <span className="font-bold text-slate-700">{employee?.name}</span>
-                {previewDoc?.created_at && (
-                  <span className="ml-2 text-slate-400">
-                    • {new Date(previewDoc.created_at).toLocaleDateString()}
+      {previewDoc && (
+        <Modal isOpen={true} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc.title || 'Preview'}`} maxWidth="5xl">
+          <div className="space-y-3">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-slate-900 text-sm">{previewDoc.title}</span>
+                  <span className="px-2 py-0.5 bg-[#0f365e]/10 text-[#0f365e] font-bold text-[10px] rounded-md capitalize">
+                    {previewDoc.type?.replace('_', ' ')}
                   </span>
-                )}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {previewBlobUrl && (
-                <button
-                  onClick={() => window.open(previewBlobUrl, '_blank')}
-                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-lg border border-slate-300 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
-                  title="Open in new window"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
-                  <span>Open in Tab</span>
-                </button>
-              )}
-              <button
-                onClick={() => handleDownloadDoc(previewDoc)}
-                className="px-3.5 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="w-full h-[68vh] min-h-[480px] bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-center items-center relative">
-            {previewLoading && (
-              <div className="flex flex-col items-center gap-2 p-8 text-center animate-pulse">
-                <div className="w-10 h-10 border-4 border-[#0f365e] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-xs font-bold text-slate-700">Loading document preview...</p>
-                <p className="text-[11px] text-slate-400">Fetching secure stream</p>
-              </div>
-            )}
-
-            {!previewLoading && previewError && (
-              <div className="text-center p-8 space-y-3 max-w-md bg-white rounded-xl border border-slate-200 shadow-xs">
-                <FileText className="w-10 h-10 text-amber-500 mx-auto" />
-                <p className="text-xs font-extrabold text-slate-800">Preview Notice</p>
-                <p className="text-[11px] text-slate-500">{previewError}</p>
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <button
-                    onClick={() => handleDownloadDoc(previewDoc)}
-                    className="px-4 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download File</span>
-                  </button>
                 </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Uploaded for: <span className="font-bold text-slate-700">{employee?.name}</span>
+                  {previewDoc.created_at && (
+                    <span className="ml-2 text-slate-400">
+                      • {new Date(previewDoc.created_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </p>
               </div>
-            )}
 
-            {!previewLoading && !previewError && previewBlobUrl && (
-              <UniversalDocViewer
-                url={previewBlobUrl}
-                fileName={previewDoc.file_url ? previewDoc.file_url.split('/').pop() : `${previewDoc.title || 'document'}.pdf`}
-                contentType={previewContentType}
-                title={previewDoc.title}
-                onDownload={() => handleDownloadDoc(previewDoc)}
-              />
-            )}
+              <div className="flex items-center gap-2">
+                {previewBlobUrl && (
+                  <button
+                    onClick={() => window.open(previewBlobUrl, '_blank')}
+                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-lg border border-slate-300 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                    title="Open in new window"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Open in Tab</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDownloadDoc(previewDoc)}
+                  className="px-3.5 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="w-full h-[68vh] min-h-[480px] bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-center items-center relative">
+              {previewLoading && (
+                <div className="flex flex-col items-center gap-2 p-8 text-center animate-pulse">
+                  <div className="w-10 h-10 border-4 border-[#0f365e] border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs font-bold text-slate-700">Loading document preview...</p>
+                  <p className="text-[11px] text-slate-400">Fetching secure stream</p>
+                </div>
+              )}
+
+              {!previewLoading && previewError && (
+                <div className="text-center p-8 space-y-3 max-w-md bg-white rounded-xl border border-slate-200 shadow-xs">
+                  <FileText className="w-10 h-10 text-amber-500 mx-auto" />
+                  <p className="text-xs font-extrabold text-slate-800">Preview Notice</p>
+                  <p className="text-[11px] text-slate-500">{previewError}</p>
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <button
+                      onClick={() => handleDownloadDoc(previewDoc)}
+                      className="px-4 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download File</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!previewLoading && !previewError && previewBlobUrl && (
+                <UniversalDocViewer
+                  url={previewBlobUrl}
+                  fileName={previewDoc.file_url ? previewDoc.file_url.split('/').pop() : `${previewDoc.title || 'document'}.pdf`}
+                  contentType={previewContentType}
+                  title={previewDoc.title}
+                  onDownload={() => handleDownloadDoc(previewDoc)}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
 
       <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
     </div>
