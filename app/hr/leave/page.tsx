@@ -9,6 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Toast } from '@/components/ui/Toast';
 import { fetchApi } from '@/lib/api';
 import { exportToCSV } from '@/lib/export';
+import { useAuth } from '@/lib/auth-context';
 import { Plus, Download, CheckCircle, XCircle, Clock, Users, UserCheck } from '@/components/ui/Icon';
 
 const DEFAULT_LEAVE_TYPES = [
@@ -21,12 +22,14 @@ const DEFAULT_LEAVE_TYPES = [
 ];
 
 export default function HRLeavePage() {
+  const { user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'org' | 'personal'>('org');
   const [orgRequests, setOrgRequests] = useState<any[]>([]);
   const [personalRequests, setPersonalRequests] = useState<any[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<any[]>(DEFAULT_LEAVE_TYPES);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [approvingId, setApprovingId] = useState<number | null>(null);
 
   // Apply Leave Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,6 +46,12 @@ export default function HRLeavePage() {
   const [rejecting, setRejecting] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
 
   useEffect(() => {
     loadLeaveRequests();
@@ -87,26 +96,29 @@ export default function HRLeavePage() {
         }),
       });
 
-      setToastMessage('HR personal leave request submitted successfully.');
+      showToast('Personal leave request submitted successfully.', 'success');
       setIsModalOpen(false);
       setReason('');
       setStartDate('');
       setEndDate('');
       await loadLeaveRequests();
     } catch (err: any) {
-      setToastMessage(err.message || 'Leave application failed');
+      showToast(err.message || 'Leave application failed', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleApprove = async (id: number) => {
+    setApprovingId(id);
     try {
       const res = await fetchApi(`/leave/requests/${id}/approve`, { method: 'POST' });
-      setToastMessage(res.message || 'Leave request approved successfully!');
+      showToast(res.message || 'Leave request approved successfully!', 'success');
       await loadLeaveRequests();
     } catch (err: any) {
-      setToastMessage(err.message || 'Failed to approve leave request');
+      showToast(err.message || 'Failed to approve leave request', 'error');
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -126,13 +138,13 @@ export default function HRLeavePage() {
         method: 'POST',
         body: JSON.stringify({ rejection_reason: rejectionReason }),
       });
-      setToastMessage(res.message || 'Leave request declined.');
+      showToast(res.message || 'Leave request declined.', 'info');
       setRejectModalOpen(false);
       setSelectedRequestId(null);
       setRejectionReason('');
       await loadLeaveRequests();
     } catch (err: any) {
-      setToastMessage(err.message || 'Failed to decline leave request');
+      showToast(err.message || 'Failed to decline leave request', 'error');
     } finally {
       setRejecting(false);
     }
@@ -141,7 +153,7 @@ export default function HRLeavePage() {
   const handleExportExcel = () => {
     const dataToExport = activeTab === 'org' ? orgRequests : personalRequests;
     if (dataToExport.length === 0) {
-      setToastMessage('No leave records available to export.');
+      showToast('No leave records available to export.', 'info');
       return;
     }
     const headers = ['Employee', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Reason', 'Status', 'Approver'];
@@ -157,7 +169,7 @@ export default function HRLeavePage() {
     ]);
 
     exportToCSV(`organization_leave_records_${Date.now()}`, headers, rows);
-    setToastMessage('Exported leave records to CSV successfully.');
+    showToast('Exported leave records to CSV successfully.', 'success');
   };
 
   const pendingOrgCount = orgRequests.filter((r) => r.status === 'pending').length;
@@ -248,7 +260,7 @@ export default function HRLeavePage() {
               </div>
             ) : (
               <TablePrimitive
-                headers={['Employee', 'Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Approval Status']}
+                headers={['Employee', 'Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Approval / Actions']}
                 rows={orgRequests.map((r) => [
                   <div key="emp">
                     <p className="font-extrabold text-slate-900 text-xs">{r.user?.name || 'Staff'}</p>
@@ -263,10 +275,33 @@ export default function HRLeavePage() {
                   </Badge>,
                   <div key="actions" className="flex items-center gap-1.5">
                     {r.status === 'pending' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold rounded-lg">
-                        <Clock className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Awaiting Admin Approval</span>
-                      </span>
+                      isAdmin || user?.role === 'admin' ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleApprove(r.id)}
+                            disabled={approvingId === r.id || rejecting}
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                            title="Approve Leave Application"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>{approvingId === r.id ? 'Approving...' : 'Approve'}</span>
+                          </button>
+                          <button
+                            onClick={() => openRejectModal(r.id)}
+                            disabled={approvingId === r.id || rejecting}
+                            className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-[11px] font-bold rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                            title="Decline Leave Application"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold rounded-lg">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Awaiting Admin Approval</span>
+                        </span>
+                      )
                     ) : r.status === 'approved' ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
@@ -439,7 +474,7 @@ export default function HRLeavePage() {
         </form>
       </Modal>
 
-      <Toast message={toastMessage} type="info" onClose={() => setToastMessage(null)} />
+      <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
     </PortalLayout>
   );
 }

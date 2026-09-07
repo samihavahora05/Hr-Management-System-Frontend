@@ -744,7 +744,7 @@ export default function CreateInvoicePage() {
               className="w-full py-2.5 border-2 border-dashed border-slate-300 hover:border-[#0f365e] hover:bg-slate-50 text-slate-600 hover:text-[#0f365e] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Add Another Line Item</span>
+              <span>Add Another Line Item</span>
             </button>
           </div>
 

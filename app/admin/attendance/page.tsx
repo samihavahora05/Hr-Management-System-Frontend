@@ -427,7 +427,7 @@ export default function AdminAttendancePage() {
               title="Add or edit user attendance record"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Manual Entry</span>
+              <span>Manual Entry</span>
             </button>
           </div>
         }
