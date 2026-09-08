@@ -35,18 +35,26 @@ export default function EmployeeDetailPage() {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewContentType, setPreviewContentType] = useState<string>('');
 
+  const closePreviewModal = () => {
+    if (previewBlobUrl) {
+      try {
+        URL.revokeObjectURL(previewBlobUrl);
+      } catch (e) {
+        // safe ignore
+      }
+    }
+    setPreviewDoc(null);
+    setPreviewBlobUrl(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
+    setPreviewContentType('');
+  };
+
   useEffect(() => {
     let active = true;
-    let revokeFn: (() => void) | null = null;
+    let currentObjectUrl: string | null = null;
 
-    if (!previewDoc) {
-      if (previewBlobUrl) {
-        URL.revokeObjectURL(previewBlobUrl);
-      }
-      setPreviewBlobUrl(null);
-      setPreviewLoading(false);
-      setPreviewError(null);
-      setPreviewContentType('');
+    if (!previewDoc?.id) {
       return;
     }
 
@@ -56,10 +64,12 @@ export default function EmployeeDetailPage() {
     fetchApiBlobUrl(`/documents/${previewDoc.id}/view`)
       .then((res) => {
         if (!active) {
-          res.revoke();
+          try {
+            res.revoke();
+          } catch (e) {}
           return;
         }
-        revokeFn = res.revoke;
+        currentObjectUrl = res.url;
         setPreviewBlobUrl(res.url);
         setPreviewContentType(res.contentType || '');
         setPreviewLoading(false);
@@ -72,8 +82,10 @@ export default function EmployeeDetailPage() {
 
     return () => {
       active = false;
-      if (revokeFn) {
-        revokeFn();
+      if (currentObjectUrl) {
+        try {
+          URL.revokeObjectURL(currentObjectUrl);
+        } catch (e) {}
       }
     };
   }, [previewDoc?.id]);
@@ -478,7 +490,7 @@ export default function EmployeeDetailPage() {
 
       {/* DOCUMENT PREVIEW MODAL */}
       {previewDoc && (
-        <Modal isOpen={true} onClose={() => setPreviewDoc(null)} title={`Document: ${previewDoc.title || 'Preview'}`} maxWidth="5xl">
+        <Modal isOpen={true} onClose={closePreviewModal} title={`Document: ${previewDoc.title || 'Preview'}`} maxWidth="5xl">
           <div className="space-y-3">
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -501,6 +513,7 @@ export default function EmployeeDetailPage() {
               <div className="flex items-center gap-2">
                 {previewBlobUrl && (
                   <button
+                    type="button"
                     onClick={() => window.open(previewBlobUrl, '_blank')}
                     className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-lg border border-slate-300 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                     title="Open in new window"
@@ -510,6 +523,7 @@ export default function EmployeeDetailPage() {
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleDownloadDoc(previewDoc)}
                   className="px-3.5 py-1.5 bg-[#0f365e] hover:bg-[#164677] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                 >

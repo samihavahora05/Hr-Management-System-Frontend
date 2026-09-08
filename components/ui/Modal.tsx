@@ -28,7 +28,10 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'lg' }: Mod
   const maxWClass = maxWidthMap[maxWidth] || 'max-w-lg';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto print:static print:p-0 print:bg-white print:overflow-visible print:z-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto print:static print:p-0 print:bg-white print:overflow-visible print:z-auto"
+      onClick={onClose}
+    >
       <div
         className={`bg-white border border-slate-200 rounded-2xl shadow-2xl ${maxWClass} w-full my-auto sm:my-8 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh] print:max-h-none print:shadow-none print:border-none print:my-0 print:w-full print:rounded-none print:p-0`}
         onClick={(e) => e.stopPropagation()}
@@ -37,7 +40,12 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'lg' }: Mod
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/70 shrink-0 print:hidden gap-3">
           <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">{title}</h2>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             aria-label="Close modal"
             className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-all cursor-pointer shrink-0"
           >

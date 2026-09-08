@@ -577,6 +577,8 @@ export function UniversalDocViewer({
             <img
               src={url}
               alt={title || 'Document Preview'}
+              draggable={false}
+              onError={() => setError('Unable to render image preview.')}
               className="max-h-full max-w-full object-contain rounded-lg shadow-xl bg-white transition-transform duration-200"
               style={{
                 transform: `scale(${imageZoom}) rotate(${imageRotation}deg)`,
