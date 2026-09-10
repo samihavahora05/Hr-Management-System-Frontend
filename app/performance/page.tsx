@@ -14,10 +14,10 @@ export default function PerformancePage() {
         router.replace('/login');
       } else {
         const role = (user.role || '').toLowerCase();
-        if (role === 'admin') {
+        if (['admin', 'hr', 'manager', 'team_leader'].includes(role)) {
           router.replace('/admin/performance');
         } else {
-          router.replace(getRoleDefaultRoute(user.role));
+          router.replace('/employee/performance');
         }
       }
     }

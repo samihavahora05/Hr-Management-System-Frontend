@@ -12,6 +12,10 @@ import {
   Search,
   ChevronRight,
   Filter,
+  Calendar,
+  Send,
+  RefreshCw,
+  FileCheck,
 } from '@/components/ui/Icon';
 
 interface EmployeeTaskPerformanceProps {
@@ -22,22 +26,34 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
   const [performances, setPerformances] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>({
     overall_completion_rate: 0,
+    overall_performance_rate: 0,
     total_organization_tasks: 0,
     total_completed_tasks: 0,
+    total_approved_tasks: 0,
+    total_earned_marks: 0,
+    total_possible_marks: 0,
     total_employees: 0,
   });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     loadPerformanceData();
-  }, []);
+  }, [startDate, endDate]);
 
   const loadPerformanceData = async () => {
     setLoading(true);
     try {
-      const res = await fetchApi('/tasks/performance');
+      let queryStr = '';
+      const params: string[] = [];
+      if (startDate) params.push(`start_date=${startDate}`);
+      if (endDate) params.push(`end_date=${endDate}`);
+      if (params.length > 0) queryStr = `?${params.join('&')}`;
+
+      const res = await fetchApi(`/tasks/performance${queryStr}`);
       setPerformances(res.performances || []);
       if (res.summary) setSummary(res.summary);
     } catch (err) {
@@ -50,14 +66,14 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
   const departments = Array.from(new Set(performances.map((p) => p.department))).filter(Boolean);
 
   const filteredPerformances = performances.filter((p) => {
-    if (departmentFilter !== 'all' && p.department.toLowerCase() !== departmentFilter.toLowerCase()) {
+    if (departmentFilter !== 'all' && (p.department || '').toLowerCase() !== departmentFilter.toLowerCase()) {
       return false;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = p.name.toLowerCase().includes(q);
+      const matchName = (p.name || '').toLowerCase().includes(q);
       const matchCode = (p.employee_code || '').toLowerCase().includes(q);
-      const matchDept = p.department.toLowerCase().includes(q);
+      const matchDept = (p.department || '').toLowerCase().includes(q);
       if (!matchName && !matchCode && !matchDept) return false;
     }
     return true;
@@ -69,22 +85,22 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
     <div className="space-y-6">
       {/* SUMMARY STATS & LEADERBOARD HIGHLIGHT */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* OVERALL COMPLETION RATE */}
+        {/* OVERALL PERFORMANCE SCORE */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Overall Task Completion</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Overall Performance Score</span>
             <TrendingUp className="w-5 h-5 text-indigo-600" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {summary.overall_completion_rate}%
+            <span className="text-3xl font-black text-slate-900 font-mono">
+              {summary.overall_performance_rate ?? summary.overall_completion_rate}%
             </span>
-            <span className="text-xs text-slate-500 font-semibold">completion rate</span>
+            <span className="text-xs text-slate-500 font-semibold">from admin marks</span>
           </div>
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-              style={{ width: `${summary.overall_completion_rate}%` }}
+              style={{ width: `${summary.overall_performance_rate ?? summary.overall_completion_rate}%` }}
             />
           </div>
         </div>
@@ -99,69 +115,69 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
             <div>
               <p className="font-extrabold text-slate-900 text-sm truncate">{topPerformer.name}</p>
               <p className="text-[11px] text-slate-500 font-medium truncate">
-                {topPerformer.department} — {topPerformer.completion_rate}% Task Completion
+                {topPerformer.department} — {topPerformer.performance_percentage}% Verified Score ({topPerformer.total_earned_marks}/{topPerformer.total_possible_marks} marks)
               </p>
               <span className="inline-block mt-2 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
-                🏆 #{1} Performer
+                🏆 #{1} Performance Leader
               </span>
             </div>
           ) : (
-            <p className="text-xs text-slate-400 font-medium">No task completion records yet</p>
+            <p className="text-xs text-slate-400 font-medium">No task evaluation records yet</p>
           )}
         </div>
 
-        {/* TOTAL COMPLETED TASKS */}
+        {/* TOTAL MARKS EARNED */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Tasks Completed</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Marks Awarded</span>
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {summary.total_completed_tasks}
+            <span className="text-3xl font-black text-slate-900 font-mono">
+              {(summary.total_earned_marks || 0).toLocaleString()}
             </span>
             <span className="text-xs text-slate-500 font-semibold">
-              of {summary.total_organization_tasks} assigned
+              of {(summary.total_possible_marks || 0).toLocaleString()} max marks
             </span>
           </div>
           <p className="text-[11px] text-slate-500 font-medium">
-            Active workforce tasks delivered on schedule
+            {summary.total_approved_tasks || summary.total_completed_tasks || 0} approved tasks verified by admin
           </p>
         </div>
 
         {/* ACTIVE EMPLOYEES EVALUATED */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Employees Evaluated</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Workforce Evaluated</span>
             <Users className="w-5 h-5 text-slate-400" />
           </div>
-          <span className="text-3xl font-extrabold text-slate-900">
+          <span className="text-3xl font-black text-slate-900 font-mono">
             {summary.total_employees}
           </span>
           <p className="text-[11px] text-slate-500 font-medium">
-            Tracked across departments and teams
+            Strict manual review across all departments
           </p>
         </div>
       </div>
 
-      {/* SEARCH & CONTROLS */}
+      {/* SEARCH & FILTERS CONTROLS */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search employee name, code, or department..."
+            placeholder="Search employee name, employee code, or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-[#0f365e]"
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:bg-white focus:outline-hidden"
+            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:bg-white focus:outline-hidden"
           >
             <option value="all">All Departments</option>
             {departments.map((dept) => (
@@ -170,6 +186,37 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
               </option>
             ))}
           </select>
+
+          <div className="flex items-center gap-1.5 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px]"
+              title="From date"
+            />
+            <span className="text-slate-400">to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px]"
+              title="To date"
+            />
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                }}
+                className="text-[11px] text-slate-500 hover:text-slate-800 underline font-medium"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -177,11 +224,11 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-xs font-semibold text-slate-400 animate-pulse">
-            Evaluating employee task completion performance metrics...
+            Calculating employee task performance scores from verified admin marks...
           </div>
         ) : filteredPerformances.length === 0 ? (
           <div className="py-12 text-center text-xs font-semibold text-slate-500">
-            No employee task performance records found matching filter criteria.
+            No employee performance records found matching filter criteria.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -189,17 +236,18 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                   <th className="py-3.5 px-4">Employee</th>
-                  <th className="py-3.5 px-4">Department & Designation</th>
-                  <th className="py-3.5 px-4">Total Tasks</th>
-                  <th className="py-3.5 px-4">Completed / Pending</th>
-                  <th className="py-3.5 px-4">Overdue</th>
-                  <th className="py-3.5 px-4">Completion Rate (%)</th>
-                  <th className="py-3.5 px-4">Performance Evaluation Rating</th>
+                  <th className="py-3.5 px-4">Department & Role</th>
+                  <th className="py-3.5 px-4 text-center">Total Tasks</th>
+                  <th className="py-3.5 px-4 text-center">Approved / Pending / Revision</th>
+                  <th className="py-3.5 px-4 text-center">Overdue</th>
+                  <th className="py-3.5 px-4 text-center">Marks Earned / Max</th>
+                  <th className="py-3.5 px-4">Performance Score (%)</th>
+                  <th className="py-3.5 px-4 text-center">Rating</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {filteredPerformances.map((emp, index) => {
-                  const rate = emp.completion_rate;
+                  const rate = emp.performance_percentage ?? 0;
 
                   let progressColor = 'bg-rose-500';
                   if (rate >= 75) progressColor = 'bg-emerald-500';
@@ -221,14 +269,14 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
                       {/* EMPLOYEE INFO */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#0f365e] text-white font-extrabold text-xs flex items-center justify-center shadow-2xs">
-                            {emp.name[0]}
+                          <div className="w-8 h-8 rounded-full bg-[#0f365e] text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                            {(emp.name || 'E')[0]}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <p className="font-extrabold text-slate-900 text-xs">{emp.name}</p>
-                              {index === 0 && emp.total_tasks > 0 && (
-                                <span className="text-[10px] text-amber-600" title="Top Performer">
+                              {index === 0 && emp.total_tasks > 0 && emp.total_earned_marks > 0 && (
+                                <span className="text-[11px]" title="Leader">
                                   👑
                                 </span>
                               )}
@@ -243,66 +291,76 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
                       {/* DEPT & DESIGNATION */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <p className="font-bold text-slate-800 text-xs">{emp.department}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">{emp.designation}</p>
+                        <p className="text-[10px] text-slate-500 font-medium">{emp.designation || emp.role}</p>
                       </td>
 
                       {/* TOTAL TASKS */}
-                      <td className="py-3.5 px-4 whitespace-nowrap font-extrabold text-slate-900 text-sm">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap font-mono font-extrabold text-slate-900 text-sm">
                         {emp.total_tasks}
                       </td>
 
-                      {/* COMPLETED vs PENDING */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* APPROVED vs PENDING REVIEW vs REVISION */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
                           <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-extrabold text-[11px]">
-                            {emp.completed_tasks || 0} Completed
+                            {emp.approved_tasks || emp.completed_tasks || 0} Approved
                           </span>
+                          {(emp.submitted_for_review_tasks || 0) > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-purple-700 font-bold text-[11px]">
+                              {emp.submitted_for_review_tasks} Review
+                            </span>
+                          )}
+                          {(emp.needs_revision_tasks || 0) > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[11px]">
+                              {emp.needs_revision_tasks} Revision
+                            </span>
+                          )}
                           {(emp.in_progress_tasks || 0) > 0 && (
                             <span className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-[11px]">
-                              {emp.in_progress_tasks} In Progress
+                              {emp.in_progress_tasks} Active
                             </span>
-                          )}
-                          {(emp.todo_tasks || emp.pending_tasks || 0) > 0 && (
-                            <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[11px]">
-                              {emp.todo_tasks || emp.pending_tasks || 0} To Do
-                            </span>
-                          )}
-                          {(emp.completed_tasks || 0) === 0 && (emp.in_progress_tasks || 0) === 0 && (emp.todo_tasks || 0) === 0 && (
-                            <span className="text-slate-400 text-[11px] font-medium">0 pending</span>
                           )}
                         </div>
                       </td>
 
                       {/* OVERDUE */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         {emp.overdue_tasks > 0 ? (
-                          <span className="px-2 py-0.5 rounded-md bg-rose-100 border border-rose-200 text-rose-700 font-extrabold text-[11px] flex items-center gap-1 w-fit">
+                          <span className="px-2 py-0.5 rounded-md bg-rose-100 border border-rose-200 text-rose-700 font-extrabold text-[11px] inline-flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-rose-600" />
-                            {emp.overdue_tasks} Overdue
+                            {emp.overdue_tasks}
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-[11px] font-medium">0 overdue</span>
+                          <span className="text-slate-400 text-[11px] font-mono">0</span>
                         )}
                       </td>
 
-                      {/* COMPLETION RATE BAR */}
+                      {/* MARKS EARNED / MAX */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap font-mono">
+                        <span className="font-extrabold text-slate-900 text-xs">
+                          {emp.total_earned_marks || 0}
+                        </span>
+                        <span className="text-slate-400 text-xs"> / {emp.total_possible_marks || 0}</span>
+                      </td>
+
+                      {/* PERFORMANCE SCORE BAR */}
                       <td className="py-3.5 px-4 whitespace-nowrap min-w-[160px]">
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[11px] font-extrabold text-slate-800">
-                            <span>Rate</span>
+                          <div className="flex justify-between text-[11px] font-mono font-extrabold text-slate-800">
+                            <span>Score</span>
                             <span>{rate}%</span>
                           </div>
                           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full ${progressColor} transition-all duration-300`}
-                              style={{ width: `${rate}%` }}
+                              style={{ width: `${Math.min(100, rate)}%` }}
                             />
                           </div>
                         </div>
                       </td>
 
                       {/* RATING BADGE */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] border ${badgeStyle}`}>
                           {emp.rating}
                         </span>

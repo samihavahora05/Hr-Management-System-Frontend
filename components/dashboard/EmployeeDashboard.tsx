@@ -89,27 +89,32 @@ export function EmployeeDashboard({
           </div>
           <div className="text-2xl sm:text-3xl font-black text-indigo-900 mt-2 font-mono flex items-baseline gap-2 flex-wrap">
             <span>{myTasks.total || 0}</span>
-            <span className="text-xs font-semibold text-slate-500 font-sans">total work todos</span>
+            <span className="text-xs font-semibold text-slate-500 font-sans">assigned tasks</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-2">{myTasks.completed || 0} completed • {myTasks.todo || 0} to do</p>
+          <p className="text-[10px] text-slate-400 mt-2">
+            {myTasks.approved || myTasks.completed || 0} approved • {myTasks.submitted_for_review || 0} under review
+          </p>
         </Link>
 
-        {/* TASK COMPLETION RATE */}
+        {/* TASK PERFORMANCE RATE */}
         <Link
-          href="/employee/tasks"
+          href="/employee/performance"
           className="group bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-4 sm:p-5 shadow-2xs block cursor-pointer min-w-0"
         >
           <div className="flex items-center justify-between text-slate-500 uppercase tracking-wider text-[10px] font-bold">
             <span className="flex items-center gap-1.5 group-hover:text-emerald-600 transition-colors truncate">
-              <TrendingUp className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform shrink-0" /> Completion Rate
+              <TrendingUp className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform shrink-0" /> Performance Score
             </span>
             <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-700 mt-2 font-mono flex items-baseline gap-2 flex-wrap">
-            <span>{myTasks.completion_rate || 0}%</span>
+            <span>{myTasks.performance_percentage ?? myTasks.completion_rate ?? 0}%</span>
+            <span className="text-xs font-semibold text-slate-500 font-sans">
+              ({myTasks.total_earned_marks || 0}/{myTasks.total_possible_marks || 0} marks)
+            </span>
           </div>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-2">
-            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${myTasks.completion_rate || 0}%` }} />
+            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, myTasks.performance_percentage ?? myTasks.completion_rate ?? 0)}%` }} />
           </div>
         </Link>
 

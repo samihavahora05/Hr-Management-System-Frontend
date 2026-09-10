@@ -106,6 +106,8 @@ export function UniversalDocViewer({
   // Common UI State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
 
   // Excel State
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
@@ -131,29 +133,61 @@ export function UniversalDocViewer({
   // Load and Parse Document Binary / Data
   useEffect(() => {
     let active = true;
+    let createdPdfUrl: string | null = null;
+    let createdImgUrl: string | null = null;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      // If fetching binary takes more than 3.5s, fallback to direct URL stream
+      if (active && loading && (isPdf || isImage)) {
+        controller.abort();
+        setLoading(false);
+      }
+    }, 3500);
+
     setLoading(true);
     setError(null);
 
     async function parseDocument() {
       try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const authHeaders: Record<string, string> = {};
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`;
+          authHeaders['X-Auth-Token'] = token;
+        }
+
+        const res = await fetch(url, { headers: authHeaders, signal: controller.signal });
+        if (!res.ok) {
+          // If 401/403/404 or direct stream, if PDF or Image, still allow iframe/img direct load
+          if (isPdf || isImage) {
+            setLoading(false);
+            return;
+          }
+          throw new Error(`Failed to fetch file binary (HTTP ${res.status})`);
+        }
+
+        const blob = await res.blob();
+        if (!active) return;
+
         // 1. PDF
         if (isPdf) {
+          const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+          createdPdfUrl = URL.createObjectURL(pdfBlob);
+          setPdfBlobUrl(createdPdfUrl);
           setLoading(false);
           return;
         }
 
         // 2. Images
         if (isImage) {
+          const imgBlob = new Blob([blob], { type: blob.type || 'image/png' });
+          createdImgUrl = URL.createObjectURL(imgBlob);
+          setImageBlobUrl(createdImgUrl);
           setLoading(false);
           return;
         }
 
-        // Fetch ArrayBuffer for Office & Text parsing
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`Failed to fetch file binary (HTTP ${res.status})`);
-        }
-        const arrayBuffer = await res.arrayBuffer();
+        const arrayBuffer = await blob.arrayBuffer();
         if (!active) return;
 
         // 3. EXCEL (.xlsx, .xls, .csv)
@@ -240,6 +274,11 @@ export function UniversalDocViewer({
         setLoading(false);
       } catch (err: any) {
         if (!active) return;
+        if (isPdf || isImage) {
+          // If aborted or fetch failed for PDF/Image, let direct iframe/img try
+          setLoading(false);
+          return;
+        }
         setError(err.message || 'Failed to render document preview.');
         setLoading(false);
       }
@@ -249,8 +288,12 @@ export function UniversalDocViewer({
 
     return () => {
       active = false;
+      clearTimeout(timeoutId);
+      controller.abort();
+      if (createdPdfUrl) URL.revokeObjectURL(createdPdfUrl);
+      if (createdImgUrl) URL.revokeObjectURL(createdImgUrl);
     };
-  }, [url, ext, contentType]);
+  }, [url, isPdf, isExcel, isDocx, isImage, isText, ext]);
 
   // Switch Excel Sheet Tab
   const handleSelectSheet = (sheetIndex: number) => {
@@ -292,10 +335,10 @@ export function UniversalDocViewer({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-slate-100 rounded-xl overflow-hidden relative">
+    <div className="w-full h-full flex-1 flex flex-col bg-slate-100 min-h-[550px] overflow-hidden relative">
       {/* ─── 1. LOADING STATE ──────────────────────────────────────────────────────── */}
       {loading && (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-pulse">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-8 text-center bg-white/95 backdrop-blur-xs">
           <div className="w-10 h-10 border-4 border-[#0f365e] border-t-transparent rounded-full animate-spin mb-3"></div>
           <p className="text-xs font-extrabold text-slate-800">Rendering Document Preview...</p>
           <p className="text-[11px] text-slate-500 mt-0.5">
@@ -306,7 +349,7 @@ export function UniversalDocViewer({
 
       {/* ─── 2. ERROR STATE ────────────────────────────────────────────────────────── */}
       {!loading && error && (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
           <div className="text-center p-8 space-y-3 max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm">
             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
               <FileText className="w-6 h-6" />
@@ -329,20 +372,42 @@ export function UniversalDocViewer({
       )}
 
       {/* ─── 3. PDF VIEWER ─────────────────────────────────────────────────────────── */}
-      {!loading && !error && isPdf && (
-        <div className="flex-1 flex flex-col w-full h-full bg-slate-900/5 relative">
-          <object
-            data={url}
-            type="application/pdf"
-            className="w-full flex-1 border-0 bg-white"
-            title={title || 'PDF Document Viewer'}
-          >
-            <iframe
-              src={url}
-              className="w-full flex-1 border-0 bg-white"
-              title={title || 'PDF Document Viewer'}
-            />
-          </object>
+      {!error && isPdf && (
+        <div className="flex-1 flex flex-col w-full h-full min-h-[550px] bg-slate-900/5 relative overflow-hidden">
+          {/* PDF Toolbar */}
+          <div className="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs z-10 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold rounded text-[11px] shrink-0">PDF Document</span>
+              <span className="text-slate-700 font-bold truncate max-w-sm">{fileName || title || 'Document.pdf'}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={pdfBlobUrl || url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+              >
+                <span>Open Full Page</span>
+              </a>
+              {onDownload && (
+                <button
+                  type="button"
+                  onClick={onDownload}
+                  className="px-3 py-1 bg-[#0f365e] hover:bg-[#0c2b4b] text-white rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <iframe
+            src={pdfBlobUrl || url}
+            onLoad={() => setLoading(false)}
+            className="w-full flex-1 h-full min-h-[500px] border-0 bg-white"
+            title={title || fileName || 'PDF Document Viewer'}
+          />
         </div>
       )}
 

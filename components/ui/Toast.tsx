@@ -5,7 +5,7 @@ import { CheckCircle2, X } from '@/components/ui/Icon';
 
 interface ToastProps {
   message: string | null;
-  type?: 'success' | 'error' | 'info';
+  type?: 'success' | 'error' | 'info' | 'warning';
   onClose: () => void;
 }
 
@@ -17,6 +17,8 @@ export function Toast({ message, type = 'info', onClose }: ToastProps) {
       ? 'bg-emerald-900 text-emerald-50 border-emerald-700'
       : type === 'error'
       ? 'bg-rose-900 text-rose-50 border-rose-700'
+      : type === 'warning'
+      ? 'bg-amber-900 text-amber-50 border-amber-700'
       : 'bg-slate-900 text-slate-50 border-slate-700';
 
   return (
