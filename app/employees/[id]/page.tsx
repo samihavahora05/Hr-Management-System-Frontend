@@ -315,6 +315,57 @@ export default function EmployeeDetailPage() {
                   </div>
                 </div>
               </div>
+
+              {/* TASK PERFORMANCE & EVALUATION SUMMARY */}
+              {employee.task_performance && (
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Task Performance & Quality Rating</h3>
+                      <p className="text-xs text-slate-500 font-medium">Verified evaluation based on assigned tasks and admin-awarded marks</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-[#0f365e]/10 text-[#0f365e] border border-[#0f365e]/20">
+                      {employee.task_performance.rating || 'Evaluated'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Performance Score</span>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-black text-[#0f365e]">{employee.task_performance.performance_percentage}%</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Admin-evaluated</p>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Tasks</span>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-black text-slate-900">{employee.task_performance.total_tasks}</span>
+                        <span className="text-xs text-slate-500 font-medium">assigned</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{employee.task_performance.approved_tasks || 0} approved</p>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Marks Earned</span>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-black text-emerald-700">{employee.task_performance.total_earned_marks}</span>
+                        <span className="text-xs text-slate-500 font-medium">/ {employee.task_performance.total_possible_marks}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Scored tasks</p>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">On-Time Rate</span>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-black text-slate-900">{employee.task_performance.ontime_rate}%</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{employee.task_performance.overdue_tasks || 0} overdue</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

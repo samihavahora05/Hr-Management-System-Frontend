@@ -79,7 +79,10 @@ export function EmployeeTaskPerformance({ portalScope = 'hr' }: EmployeeTaskPerf
     return true;
   });
 
-  const topPerformer = performances.length > 0 ? performances[0] : null;
+  const topPerformer =
+    performances.find((p) => (p.total_tasks || 0) > 0 && (p.approved_tasks || p.completed_tasks || 0) > 0) ||
+    performances.find((p) => (p.total_tasks || 0) > 0) ||
+    (performances.length > 0 ? performances[0] : null);
 
   return (
     <div className="space-y-6">
