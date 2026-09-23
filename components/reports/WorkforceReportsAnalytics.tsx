@@ -470,9 +470,9 @@ export function WorkforceReportsAnalytics({ portalNamespace = 'hr' }: WorkforceR
                   <span key="dept" className="text-xs text-slate-700 font-bold">{r.department || 'General'}</span>,
                   <span key="dates" className="font-mono text-[11px] text-slate-600">{r.start_date} to {r.end_date}</span>,
                   <span key="cnt" className="font-mono font-extrabold text-xs text-[#0f365e]">{r.days_count} Days</span>,
-                  <div key="reason">
-                    <p className="text-xs text-slate-700 italic truncate max-w-xs">&quot;{r.reason || 'Personal Leave'}&quot;</p>
-                    <p className="text-[10px] text-emerald-700 font-bold">Approved by {r.approver_name}</p>
+                  <div key="reason" className="max-w-xs sm:max-w-sm">
+                    <p className="text-xs text-slate-700 whitespace-pre-wrap break-words italic leading-relaxed">&quot;{r.reason || 'Personal Leave'}&quot;</p>
+                    <p className="text-[10px] text-emerald-700 font-bold mt-0.5">Approved by {r.approver_name}</p>
                   </div>,
                 ])}
               />

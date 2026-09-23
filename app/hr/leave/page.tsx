@@ -269,7 +269,7 @@ export default function HRLeavePage() {
                   <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
                   <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
                   <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
-                  <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block" title={r.reason}>{r.reason}</span>,
+                  <span key="reason" className="text-xs text-slate-600 whitespace-pre-wrap break-words max-w-xs block leading-relaxed" title={r.reason}>{r.reason || '—'}</span>,
                   <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
                     {r.status}
                   </Badge>,
@@ -336,7 +336,7 @@ export default function HRLeavePage() {
                 <span key="type" className="font-semibold text-slate-800 text-xs">{r.leave_type?.name || 'Leave'}</span>,
                 <span key="dates" className="font-mono text-xs text-slate-600">{r.start_date} to {r.end_date}</span>,
                 <span key="days" className="font-bold text-slate-900 text-xs">{r.days_count}d</span>,
-                <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">{r.reason}</span>,
+                <span key="reason" className="text-xs text-slate-600 whitespace-pre-wrap break-words max-w-xs block leading-relaxed" title={r.reason}>{r.reason || '—'}</span>,
                 <Badge key="status" variant={r.status === 'approved' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}>
                   {r.status}
                 </Badge>,

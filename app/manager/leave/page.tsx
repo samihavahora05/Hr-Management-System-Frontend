@@ -234,8 +234,8 @@ export default function ManagerLeavePage() {
                   <span key="days" className="font-bold text-slate-900 text-xs">
                     {r.days_count}d
                   </span>,
-                  <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block" title={r.reason}>
-                    {r.reason}
+                  <span key="reason" className="text-xs text-slate-600 whitespace-pre-wrap break-words max-w-xs block leading-relaxed" title={r.reason}>
+                    {r.reason || '—'}
                   </span>,
                   <Badge
                     key="status"
@@ -289,8 +289,8 @@ export default function ManagerLeavePage() {
                 <span key="days" className="font-bold text-slate-900 text-xs">
                   {r.days_count}d
                 </span>,
-                <span key="reason" className="text-xs text-slate-600 truncate max-w-xs block">
-                  {r.reason}
+                <span key="reason" className="text-xs text-slate-600 whitespace-pre-wrap break-words max-w-xs block leading-relaxed" title={r.reason}>
+                  {r.reason || '—'}
                 </span>,
                 <Badge
                   key="status"
